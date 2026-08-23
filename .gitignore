@@ -1,4 +1,11 @@
-node_modules
+.DS_Store
 .env
-build
-.react-router
+/node_modules/
+
+# React Router
+/.react-router/
+/build/
+.env
+drizzle/
+test-results/
+playwright-report/

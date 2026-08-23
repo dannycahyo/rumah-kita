@@ -1,0 +1,44 @@
+{
+  "name": "rumah-kita",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "dev": "react-router dev",
+    "start": "react-router-serve ./build/server/index.js",
+    "typecheck": "react-router typegen && tsc",
+    "db:push": "drizzle-kit push",
+    "db:seed": "tsx app/db/seed.ts",
+    "db:reset": "tsx app/db/seed.ts --reset"
+  },
+  "dependencies": {
+    "@react-router/node": "^8",
+    "@react-router/serve": "^8",
+    "drizzle-orm": "^0.45.2",
+    "isbot": "^5.1.36",
+    "postgres": "^3.4.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router": "^8",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@react-router/dev": "^8",
+    "@react-router/fs-routes": "^8.3.0",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/node": "^22",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "drizzle-kit": "^0.31.10",
+    "tailwindcss": "^4.2.2",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.3"
+  },
+  "allowScripts": {
+    "esbuild@0.18.20": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true
+  }
+}
