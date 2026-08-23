@@ -287,19 +287,23 @@ async function seed() {
     kkPerRegu.set(h.reguId!, arr);
   }
 
-  const hadirValues = [];
+  const hadirValues: Array<{
+    rondaNightId: number;
+    householdId: number;
+    status: 'hadir' | 'tidak_hadir' | 'diganti';
+  }> = [];
   for (const m of malamLewat) {
     for (const h of kkPerRegu.get(m.reguId) ?? []) {
       const r = acak();
       hadirValues.push({
         rondaNightId: m.id,
         householdId: h.id,
-        status: r > 0.92 ? ('tidak_hadir' as const) : ('hadir' as const)
+        status: r > 0.92 ? 'tidak_hadir' : 'hadir'
       });
     }
   }
   // Satu contoh "diganti" supaya statusnya terlihat di demo.
-  if (hadirValues.length > 5) hadirValues[5].status = 'diganti' as const;
+  if (hadirValues.length > 5) hadirValues[5].status = 'diganti';
   for (let i = 0; i < hadirValues.length; i += 500) {
     await db.insert(rondaAttendance).values(hadirValues.slice(i, i + 500));
   }

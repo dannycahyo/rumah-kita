@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '~/db';
 import { kasTransactions } from '~/db/schema';
-import { awalBulan, tambahHari } from '~/lib/format';
+import { akhirBulan, awalBulan } from '~/lib/format';
 
 export const KATEGORI_MASUK = [
   'Iuran sampah',

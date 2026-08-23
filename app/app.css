@@ -1,15 +1,125 @@
 @import "tailwindcss";
 
+/*
+  Sistem visual: buku kas RT.
+  Kertas hangat, garis merah margin di kiri tiap daftar, angka rupiah monospace
+  supaya kolom uang rata seperti di buku besar.
+*/
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-display: "Bitter", ui-serif, Georgia, serif;
+  --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  --color-kertas: #f7f4ec;
+  --color-kertas-tua: #efe9dc;
+  --color-tinta: #2d2a26;
+  --color-pensil: #8a8578;
+  --color-pos: #1b4332;
+  --color-pos-muda: #2d6a4f;
+  --color-pos-pucat: #d8e5dd;
+  --color-garis: #c1121f;
+  --color-garis-pucat: #f7dcde;
+  --color-lampu: #e8b004;
+  --color-lampu-pucat: #fdf0cf;
 }
 
-html,
-body {
-  @apply bg-white dark:bg-gray-950;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
+  body {
+    background-color: var(--color-kertas);
+    color: var(--color-tinta);
+    font-family: var(--font-sans);
+    /* Serat kertas halus - hanya terlihat sebagai kehangatan, bukan tekstur. */
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgba(45, 42, 38, 0.035) 1px,
+      transparent 0
+    );
+    background-size: 22px 22px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
+
+  /* Fokus keyboard selalu terlihat. */
+  :focus-visible {
+    outline: 2px solid var(--color-pos);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /*
+    Tanda margin: garis vertikal di tepi kiri baris daftar.
+    Warnanya membawa arti - ini kanal status utama seluruh aplikasi.
+      merah  = tunggakan / belum bayar
+      hijau  = lunas / selesai
+      kuning = giliran malam ini
+      abu    = netral
+  */
+  .margin-rule {
+    border-left-width: 3px;
+    border-left-style: solid;
+  }
+  .rule-tunggak {
+    border-left-color: var(--color-garis);
+  }
+  .rule-lunas {
+    border-left-color: var(--color-pos-muda);
+  }
+  .rule-malam {
+    border-left-color: var(--color-lampu);
+  }
+  .rule-netral {
+    border-left-color: var(--color-kertas-tua);
+  }
+
+  /* Angka uang: monospace, tabular, supaya kolom rupiah lurus. */
+  .angka {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  /* Label kecil huruf kapital - gaya formulir resmi. */
+  .label-resmi {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-pensil);
+  }
+
+  .kartu {
+    background-color: #fffdf8;
+    border: 1px solid var(--color-kertas-tua);
+  }
+
+  /* Baris daftar bergaris seperti buku - bukan kartu mengambang. */
+  .baris {
+    border-bottom: 1px solid var(--color-kertas-tua);
+    background-color: #fffdf8;
+  }
+  .baris:last-child {
+    border-bottom: none;
   }
 }
