@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { db } from '~/db';
 import { households, kasTransactions, sampahBills } from '~/db/schema';
+import { urutanKode } from '~/db/urutan';
 import { awalBulan, namaPeriode } from '~/lib/format';
 import { domainError } from './errors';
 import * as kas from './kas';
@@ -143,7 +144,7 @@ export async function arrears(householdId?: number) {
     .from(sampahBills)
     .innerJoin(households, eq(sampahBills.householdId, households.id))
     .where(and(...conds))
-    .orderBy(asc(sampahBills.periode), asc(households.kode));
+    .orderBy(asc(sampahBills.periode), ...urutanKode);
 }
 
 /** Daftar seluruh KK untuk satu periode + rekap lunas/belum. */
@@ -164,7 +165,7 @@ export async function roster(periode: string) {
       )
     )
     .where(eq(households.aktif, true))
-    .orderBy(asc(households.kode));
+    .orderBy(...urutanKode);
 
   const lunas = rows.filter((r) => r.bill?.status === 'lunas').length;
   const belum = rows.filter(

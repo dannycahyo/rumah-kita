@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '~/db';
 import { households, jimpitanEntries, jimpitanPeriods } from '~/db/schema';
+import { urutanKode } from '~/db/urutan';
 import { akhirBulan, awalBulan, namaPeriode } from '~/lib/format';
 import { domainError } from './errors';
 import * as kas from './kas';
@@ -28,7 +29,7 @@ export async function rosterForNight(tanggal: string) {
       )
     )
     .where(eq(households.aktif, true))
-    .orderBy(asc(households.kode));
+    .orderBy(...urutanKode);
 
   const terkunci = await isLocked(tanggal);
   const total = rows.reduce((s, r) => s + (r.entry?.jumlah ?? 0), 0);
@@ -123,7 +124,7 @@ export async function recapByHousehold(dari: string, sampai: string) {
     )
     .where(eq(households.aktif, true))
     .groupBy(households.id)
-    .orderBy(asc(households.kode));
+    .orderBy(...urutanKode);
 }
 
 /** Rekap per malam sepanjang rentang, terbaru dulu. */

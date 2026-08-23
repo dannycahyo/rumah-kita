@@ -64,7 +64,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-[#fffdf8] shadow-[0_0_60px_rgba(45,42,38,0.06)]">
-      <div className={user && !diHalamanMasuk ? "pb-32" : ""}>
+      <div className={user && !diHalamanMasuk ? "pb-40" : ""}>
         <Outlet />
       </div>
       {user && !diHalamanMasuk && (

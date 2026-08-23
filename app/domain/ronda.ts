@@ -1,6 +1,7 @@
 import { and, asc, eq, gte, inArray, lte } from 'drizzle-orm';
 import { db } from '~/db';
 import { households, regu, rondaAttendance, rondaNights } from '~/db/schema';
+import { urutanKode } from '~/db/urutan';
 import { hariDari, rentangTanggal } from '~/lib/format';
 import { domainError } from './errors';
 
@@ -55,7 +56,7 @@ export async function listNights(dari: string, sampai: string) {
         .where(
           and(inArray(households.reguId, reguIds), eq(households.aktif, true))
         )
-        .orderBy(asc(households.kode))
+        .orderBy(...urutanKode)
     : [];
 
   const perRegu = new Map<number, typeof anggota>();
@@ -81,7 +82,7 @@ export async function byDate(tanggal: string) {
     .select()
     .from(households)
     .where(and(eq(households.reguId, row.regu.id), eq(households.aktif, true)))
-    .orderBy(asc(households.kode));
+    .orderBy(...urutanKode);
 
   const hadir = await db
     .select()

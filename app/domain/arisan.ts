@@ -7,6 +7,7 @@ import {
   arisanPeriods,
   households
 } from '~/db/schema';
+import { urutanKode } from '~/db/urutan';
 import { namaPeriode } from '~/lib/format';
 import { domainError } from './errors';
 import { notifyWarga } from './notify';
@@ -37,7 +38,7 @@ export async function ringkasan(cycleId: number) {
     .from(arisanMembers)
     .innerJoin(households, eq(arisanMembers.householdId, households.id))
     .where(eq(arisanMembers.cycleId, cycleId))
-    .orderBy(asc(households.kode));
+    .orderBy(...urutanKode);
 
   const periods = await db
     .select()
@@ -75,7 +76,7 @@ export async function periodeById(periodId: number) {
     .from(arisanMembers)
     .innerJoin(households, eq(arisanMembers.householdId, households.id))
     .where(eq(arisanMembers.cycleId, period.cycleId))
-    .orderBy(asc(households.kode));
+    .orderBy(...urutanKode);
 
   const bayar = await db
     .select()
@@ -174,7 +175,7 @@ export async function eligibleForDraw(cycleId: number, tx: typeof db = db) {
           : undefined
       )
     )
-    .orderBy(asc(households.kode));
+    .orderBy(...urutanKode);
 }
 
 /**
@@ -274,7 +275,7 @@ export async function memberStatus(cycleId: number) {
     .from(arisanMembers)
     .innerJoin(households, eq(arisanMembers.householdId, households.id))
     .where(eq(arisanMembers.cycleId, cycleId))
-    .orderBy(asc(households.kode));
+    .orderBy(...urutanKode);
 
   const periods = await db
     .select()

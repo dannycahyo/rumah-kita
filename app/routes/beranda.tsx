@@ -190,7 +190,7 @@ export default function Beranda({ loaderData }: Route.ComponentProps) {
                 </p>
                 <p className="mt-0.5 text-[13px] text-pensil">
                   {d.statusArisan.sudahBayar ? "Setoran sudah masuk" : "Setoran belum masuk"}
-                  {" &middot; "}
+                  {" · "}
                   {d.statusArisan.menangPeriode
                     ? `Menang periode ${d.statusArisan.menangPeriode}`
                     : "Belum pernah menang"}
