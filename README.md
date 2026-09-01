@@ -106,4 +106,7 @@ Tiga lapis, tanpa unit test (ini prototipe):
   dengan v7 yang diminta di spesifikasi).
 - Desain visual meniru buku kas RT: kertas hangat, baris bergaris, garis merah
   margin sebagai kanal status, angka rupiah monospace agar kolom lurus.
+- Panduan onboarding (peran, modul, aturan domain) ada di
+  [`docs/ONBOARDING.md`](docs/ONBOARDING.md) — baca ini sebelum mengubah
+  `app/domain/`.
 - Rancangan lengkap ada di `docs/superpowers/specs/2026-08-23-rt-app-design.md`.
