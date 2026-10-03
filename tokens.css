@@ -1,0 +1,34 @@
+/* Hallmark · design tokens · "Kertas & Stempel" · mirrors @theme in app/app.css (source of truth: design.md) */
+:root {
+  --color-paper: oklch(96.5% 0.012 85);
+  --color-paper-2: oklch(93% 0.016 85);
+  --color-sheet: oklch(98.6% 0.007 85);
+  --color-ink: oklch(21% 0.018 55);
+  --color-ink-2: oklch(40% 0.016 60);
+  --color-ink-3: oklch(50% 0.014 65);
+  --color-rule: oklch(88% 0.012 82);
+  --color-rule-strong: oklch(76% 0.015 78);
+  --color-accent: oklch(52% 0.175 38);
+  --color-accent-ink: oklch(98% 0.01 60);
+  --color-accent-wash: oklch(94% 0.035 45);
+  --color-ok: oklch(44% 0.09 158);
+  --color-ok-wash: oklch(93% 0.035 158);
+  --color-warn: oklch(46% 0.1 78);
+  --color-warn-wash: oklch(94% 0.05 88);
+  --color-focus: oklch(52% 0.175 38);
+
+  --font-display: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --radius-ctl: 0.5rem;
+  --radius-panel: 0.75rem;
+  --rail-w: 17rem;
+  --nav-h: 4rem;
+  --bar-h: 3rem;
+}
