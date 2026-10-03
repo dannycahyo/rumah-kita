@@ -1,11 +1,24 @@
 import { Link, useSearchParams } from "react-router";
 import { z } from "zod";
 import type { Route } from "./+types/kas._index";
-import { isPengurus, requireUser } from "~/domain/auth";
+import { requireUser } from "~/domain/auth";
+import { isPengurus } from "~/lib/peran";
 import * as kas from "~/domain/kas";
 import { HARI_INI } from "~/lib/waktu";
 import { namaPeriode, rupiah, tanggal } from "~/lib/format";
-import { Bagian, Baris, Kosong, Lencana, TautanTombol, Uang } from "~/ui/kit";
+import { Ikon } from "~/ui/ikon";
+import {
+  Bagian,
+  Baris,
+  Chip,
+  Header,
+  Kosong,
+  Lencana,
+  Ringkas,
+  Strip,
+  TautanTombol,
+  Uang,
+} from "~/ui/kit";
 
 const Filter = z.object({
   jenis: z.enum(["masuk", "keluar"]).optional(),
@@ -42,75 +55,57 @@ export default function KasIndex({ loaderData }: Route.ComponentProps) {
   }
 
   return (
-    <main>
-      <header className="bg-pos px-5 pb-6 pt-7 text-kertas">
-        <p className="label-resmi text-pos-pucat/70">Buku kas RT 04</p>
-        <p
-          data-testid="saldo-kas"
-          className="angka mt-1 text-[34px] font-bold leading-none"
-        >
+    <main className="halaman">
+      <Header judul="Kas RT" />
+
+      {/* Stat-Led: saldo adalah angka terbesar, lalu masuk/keluar bulan ini. */}
+      <section className="border-t border-ink pt-5">
+        <p className="label">Saldo kas</p>
+        <p data-testid="saldo-kas" className="angka angka-besar mt-3">
           {rupiah(saldo)}
         </p>
-        <p className="mt-2 text-[12px] text-pos-pucat/80">
-          Saldo dihitung dari seluruh transaksi, bukan angka yang diketik manual.
+        <p className="mt-3 max-w-[46ch] text-[0.875rem] leading-relaxed text-ink-2">
+          Dihitung dari seluruh transaksi, bukan angka yang diketik manual.
         </p>
 
-        <div className="mt-5 grid grid-cols-2 gap-px border border-pos-muda bg-pos-muda">
-          <div className="bg-pos px-3 py-3">
-            <p className="label-resmi text-pos-pucat/70">Masuk {namaPeriode(bulan)}</p>
-            <p className="angka mt-0.5 text-[17px] font-bold">
+        <div className="mt-5">
+          <Strip>
+            <Ringkas label={`Masuk ${namaPeriode(bulan)}`} tone="hijau">
               {rupiah(ringkasan.masuk)}
-            </p>
-          </div>
-          <div className="bg-pos px-3 py-3">
-            <p className="label-resmi text-pos-pucat/70">Keluar</p>
-            <p className="angka mt-0.5 text-[17px] font-bold text-lampu">
+            </Ringkas>
+            <Ringkas label="Keluar" tone="merah">
               {rupiah(ringkasan.keluar)}
-            </p>
-          </div>
+            </Ringkas>
+          </Strip>
         </div>
 
         {isPengurus(user.role) && (
-          <TautanTombol
-            to="/kas/baru"
-            variasi="kedua"
-            className="mt-4 block w-full bg-kertas text-pos"
-          >
+          <TautanTombol to="/kas/baru" className="btn-blok mt-5 sm:w-auto">
+            <Ikon nama="tambah" ukuran={18} />
             Catat transaksi
           </TautanTombol>
         )}
-      </header>
+      </section>
 
-      {/* Filter */}
-      <div className="flex gap-1.5 overflow-x-auto border-b border-kertas-tua px-4 py-3">
-        <button
-          onClick={() => setFilter("jenis")}
-          className={`shrink-0 px-3 py-1.5 text-[12px] font-semibold ${
-            !filter.jenis ? "bg-pos text-kertas" : "bg-kertas-tua text-pensil"
-          }`}
-        >
+      <div
+        className="-mx-5 mt-10 flex gap-2 overflow-x-auto px-5 pb-1"
+        role="group"
+        aria-label="Saring transaksi"
+      >
+        <Chip aktif={!filter.jenis} onClick={() => setFilter("jenis")}>
           Semua
-        </button>
-        <button
-          onClick={() => setFilter("jenis", "masuk")}
-          className={`shrink-0 px-3 py-1.5 text-[12px] font-semibold ${
-            filter.jenis === "masuk" ? "bg-pos text-kertas" : "bg-kertas-tua text-pensil"
-          }`}
-        >
+        </Chip>
+        <Chip aktif={filter.jenis === "masuk"} onClick={() => setFilter("jenis", "masuk")}>
           Pemasukan
-        </button>
-        <button
-          onClick={() => setFilter("jenis", "keluar")}
-          className={`shrink-0 px-3 py-1.5 text-[12px] font-semibold ${
-            filter.jenis === "keluar" ? "bg-pos text-kertas" : "bg-kertas-tua text-pensil"
-          }`}
-        >
+        </Chip>
+        <Chip aktif={filter.jenis === "keluar"} onClick={() => setFilter("jenis", "keluar")}>
           Pengeluaran
-        </button>
+        </Chip>
         <select
+          aria-label="Kategori"
           value={filter.kategori ?? ""}
           onChange={(e) => setFilter("kategori", e.target.value || undefined)}
-          className="shrink-0 border border-kertas-tua bg-[#fffdf8] px-2 py-1.5 text-[12px]"
+          className="input min-h-9 w-auto shrink-0 rounded-full py-0 text-[0.875rem]"
         >
           <option value="">Semua kategori</option>
           {kategori.map((k) => (
@@ -121,46 +116,42 @@ export default function KasIndex({ loaderData }: Route.ComponentProps) {
         </select>
       </div>
 
-      <Bagian judul={`${transaksi.length} transaksi`}>
-        {transaksi.length === 0 ? (
-          <Kosong pesan="Belum ada transaksi yang cocok dengan filter ini." />
-        ) : (
-          transaksi.map((t) => (
-            <Baris key={t.id} tanda={t.jenis === "masuk" ? "lunas" : "tunggak"}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[15px] font-medium leading-snug">{t.keterangan}</p>
-                  <p className="mt-1 flex items-center gap-1.5 text-[12px] text-pensil">
-                    <span>{tanggal(t.tanggal)}</span>
-                    <span aria-hidden>&middot;</span>
-                    <span>{t.kategori}</span>
-                  </p>
-                  {t.sumberTipe && (
-                    <p className="mt-1.5">
-                      <Lencana nada="netral">
-                        {t.sumberTipe === "sampah_bill"
-                          ? "dari tagihan sampah"
-                          : "dari rekap jimpitan"}
-                      </Lencana>
+      <div className="mt-6">
+        <Bagian judul={`${transaksi.length} transaksi`}>
+          {transaksi.length === 0 ? (
+            <Kosong pesan="Belum ada transaksi yang cocok dengan filter ini." />
+          ) : (
+            transaksi.map((t) => (
+              <Baris key={t.id} tanda={t.jenis === "masuk" ? "lunas" : "tunggak"}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[1rem] font-medium leading-snug">{t.keterangan}</p>
+                    <p className="label mt-1 flex flex-wrap items-center gap-x-1.5">
+                      <span>{tanggal(t.tanggal)}</span>
+                      <span aria-hidden>&middot;</span>
+                      <span>{t.kategori}</span>
                     </p>
-                  )}
+                    {t.sumberTipe && (
+                      <p className="mt-1.5">
+                        <Lencana nada="netral">
+                          {t.sumberTipe === "sampah_bill"
+                            ? "dari tagihan sampah"
+                            : "dari rekap jimpitan"}
+                        </Lencana>
+                      </p>
+                    )}
+                  </div>
+                  <Uang
+                    nilai={t.jenis === "masuk" ? t.jumlah : -t.jumlah}
+                    tanda
+                    className="shrink-0 text-[1rem]"
+                  />
                 </div>
-                <Uang
-                  nilai={t.jenis === "masuk" ? t.jumlah : -t.jumlah}
-                  tanda
-                  className="shrink-0 text-[15px] font-semibold"
-                />
-              </div>
-            </Baris>
-          ))
-        )}
-      </Bagian>
-
-      <p className="px-5 py-6 text-center text-[12px] text-pensil">
-        <Link to="/" className="underline underline-offset-2">
-          Kembali ke Beranda
-        </Link>
-      </p>
+              </Baris>
+            ))
+          )}
+        </Bagian>
+      </div>
     </main>
   );
 }

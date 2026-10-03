@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import type { Route } from "./+types/beranda";
-import { requireUser, isPengurus, LABEL_ROLE } from "~/domain/auth";
+import { requireUser } from "~/domain/auth";
+import { isPengurus } from "~/lib/peran";
 import * as arisan from "~/domain/arisan";
 import * as jimpitan from "~/domain/jimpitan";
 import * as kas from "~/domain/kas";
@@ -10,7 +11,10 @@ import * as ronda from "~/domain/ronda";
 import * as sampah from "~/domain/sampah";
 import { HARI_INI } from "~/lib/waktu";
 import { namaPeriode, rupiah, tambahHari, tanggal, tanggalLengkap } from "~/lib/format";
-import { Bagian, Baris, Lencana, TautanTombol, Uang } from "~/ui/kit";
+import { LABEL_KATEGORI } from "~/lib/kategori";
+import { Ikon, type NamaIkon } from "~/ui/ikon";
+import { LABEL_PERAN } from "~/ui/RoleSwitcher";
+import { Bagian, Baris, Kosong, Lencana, TautanTombol, Uang } from "~/ui/kit";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const user = await requireUser(request);
@@ -48,217 +52,226 @@ export async function loader({ request }: Route.LoaderArgs) {
   };
 }
 
-const MENU = [
-  { to: "/kas", label: "Kas RT", ket: "Buku kas" },
-  { to: "/sampah", label: "Iuran Sampah", ket: "Per bulan" },
-  { to: "/jimpitan", label: "Jimpitan", ket: "Per malam" },
-  { to: "/ronda", label: "Ronda", ket: "Jadwal malam" },
-  { to: "/konsumsi", label: "Konsumsi", ket: "Giliran masak" },
-  { to: "/arisan", label: "Arisan", ket: "Kocokan" },
+const LAYANAN: { to: string; label: string; ket: string; ikon: NamaIkon }[] = [
+  { to: "/kas", label: "Kas RT", ket: "Buku kas dan saldo", ikon: "kas" },
+  { to: "/sampah", label: "Iuran sampah", ket: "Tagihan per bulan", ikon: "sampah" },
+  { to: "/jimpitan", label: "Jimpitan", ket: "Catatan per malam", ikon: "jimpitan" },
+  { to: "/ronda", label: "Ronda", ket: "Jadwal malam", ikon: "ronda" },
+  { to: "/konsumsi", label: "Konsumsi", ket: "Giliran menyiapkan", ikon: "konsumsi" },
+  { to: "/arisan", label: "Arisan", ket: "Setoran dan kocokan", ikon: "arisan" },
 ];
 
-function salam(): string {
-  return "Selamat malam";
-}
+/** Indeks urutan masuk: satu entrance berurutan di Beranda, tidak di tempat lain. */
+const urut = (i: number) => ({ "--i": i }) as React.CSSProperties;
 
 export default function Beranda({ loaderData }: Route.ComponentProps) {
   const d = loaderData;
+  const rondaTampil = d.rondaMalamIni ?? d.rondaBerikutnya;
+  const konsumsiTampil = d.konsumsiMalamIni ? { tanggal: d.hariIni } : d.konsumsiBerikutnya;
+  const adaTugasMalam = Boolean(d.rondaMalamIni || d.konsumsiMalamIni);
 
   return (
-    <main>
-      <header className="bg-pos px-5 pb-6 pt-7 text-kertas">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="label-resmi text-pos-pucat/70">
-              {tanggalLengkap(d.hariIni)}
-            </p>
-            <h1 className="mt-1 text-[26px] font-bold leading-tight">
-              {salam()}, {d.user.nama.split(" ")[0]}
-            </h1>
-            <p className="mt-1 text-[13px] text-pos-pucat">
-              {d.user.householdKode} &middot; {LABEL_ROLE[d.user.role]}
-            </p>
-          </div>
-          <Link
-            to="/keluar"
-            className="mt-1 shrink-0 border border-pos-muda px-2.5 py-1 text-[11px] font-semibold text-pos-pucat"
-          >
-            Keluar
-          </Link>
-        </div>
-
-        {d.saldo !== null && (
-          <div className="mt-5 border border-pos-muda bg-pos-muda/30 px-4 py-3">
-            <p className="label-resmi text-pos-pucat/70">Saldo kas RT</p>
-            <p className="angka mt-0.5 text-[24px] font-bold">{rupiah(d.saldo)}</p>
-          </div>
-        )}
+    <main className="halaman halaman-lebar">
+      <header className="reveal" style={urut(0)}>
+        <p className="label">{tanggalLengkap(d.hariIni)}</p>
+        <h1 className="mt-1 text-[2.25rem] lg:text-[3rem]">
+          Halo, {d.user.nama.split(" ")[0]}
+        </h1>
+        <p className="mt-2 text-[0.9375rem] text-ink-2">
+          {d.user.householdKode} &middot; {LABEL_PERAN[d.user.role]}
+        </p>
       </header>
 
-      {/* Tunggakan - paling atas kalau ada, dengan CTA bayar. */}
-      {d.totalTunggakan > 0 && (
-        <section className="margin-rule rule-tunggak border-b border-kertas-tua bg-garis-pucat/50 px-4 py-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="label-resmi text-garis">Tagihan belum dibayar</p>
-              <p className="angka mt-1 text-[22px] font-bold text-garis">
+      <div className="mt-10 grid gap-y-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:gap-x-16">
+        <div className="flex min-w-0 flex-col gap-10">
+          {/* Tunggakan: angka terbesar di halaman, dengan satu CTA bayar. */}
+          {d.totalTunggakan > 0 ? (
+            <section className="reveal border-t border-ink pt-5" style={urut(1)}>
+              <p className="label">Tagihan belum dibayar</p>
+              <p className="angka angka-besar mt-3 text-accent">
                 {rupiah(d.totalTunggakan)}
               </p>
-              <p className="mt-1 text-[13px] text-tinta/70">
+              <p className="mt-3 text-[0.9375rem] text-ink-2">
                 {d.tunggakan.length} bulan &middot; sejak{" "}
                 {namaPeriode(d.tunggakan[0].periode)}
               </p>
-            </div>
-            <TautanTombol to={`/sampah/${d.tunggakan[0].id}`} className="shrink-0">
-              Bayar
-            </TautanTombol>
-          </div>
-        </section>
-      )}
-
-      {/* Tugas malam ini - menjawab "saya ronda malam ini?" tanpa navigasi. */}
-      {d.rondaMalamIni && (
-        <section className="margin-rule rule-malam border-b border-kertas-tua bg-lampu-pucat/60 px-4 py-4">
-          <p className="label-resmi text-[#8a6a00]">Ronda malam ini</p>
-          <p className="mt-1 text-[17px] font-semibold">
-            {d.rondaMalamIni.regu.nama} &middot; {d.rondaMalamIni.regu.pos}
-          </p>
-          <p className="mt-0.5 text-[13px] text-tinta/70">
-            Mulai pukul 22.00 WIB
-          </p>
-          <Link
-            to={`/ronda/${d.rondaMalamIni.night.tanggal}`}
-            className="mt-2 inline-block text-[13px] font-semibold text-pos underline underline-offset-2"
-          >
-            Lihat anggota regu
-          </Link>
-        </section>
-      )}
-
-      {d.konsumsiMalamIni && (
-        <section className="margin-rule rule-malam border-b border-kertas-tua bg-lampu-pucat/60 px-4 py-4">
-          <p className="label-resmi text-[#8a6a00]">Giliran konsumsi malam ini</p>
-          <p className="mt-1 text-[17px] font-semibold">
-            Rumah Anda menyiapkan konsumsi pos
-          </p>
-          <p className="mt-0.5 text-[13px] text-tinta/70">
-            Antar ke pos sebelum pukul 22.00 WIB
-          </p>
-        </section>
-      )}
-
-      {/* Kalau tidak ada tugas malam ini, tampilkan yang terdekat. */}
-      {!d.rondaMalamIni && d.rondaBerikutnya && (
-        <Baris tanda="netral">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="label-resmi">Ronda berikutnya</p>
-              <p className="mt-0.5 text-[15px] font-semibold">
-                {tanggal(d.rondaBerikutnya.night.tanggal)}
+              <TautanTombol to={`/sampah/${d.tunggakan[0].id}`} className="mt-5">
+                Bayar
+              </TautanTombol>
+            </section>
+          ) : (
+            <div className="reveal border-t border-ink pt-5" style={urut(1)}>
+              <p className="label">Iuran sampah</p>
+              <p className="mt-2 flex items-center gap-2 font-display text-[1.5rem] font-semibold leading-tight">
+                <Ikon nama="centang" ukuran={24} className="text-ok" />
+                Tidak ada tagihan tertunggak
               </p>
             </div>
-            <span className="text-[13px] text-pensil">
-              {d.rondaBerikutnya.regu.nama}
-            </span>
+          )}
+
+          {/* Tugas malam ini menjawab "saya ronda malam ini?" tanpa navigasi. */}
+          <div className="reveal" style={urut(2)}>
+            <Bagian judul={adaTugasMalam ? "Tugas malam ini" : "Giliran berikutnya"}>
+              {!rondaTampil && !konsumsiTampil && (
+                <Kosong pesan="Belum ada giliran dalam seminggu ke depan." />
+              )}
+
+              {rondaTampil && (
+                <Baris tanda={d.rondaMalamIni ? "malam" : "netral"}>
+                  <p className="label">
+                    {d.rondaMalamIni
+                      ? "Ronda malam ini"
+                      : `Ronda ${tanggal(rondaTampil.night.tanggal)}`}
+                  </p>
+                  <p className="mt-0.5 text-[1.0625rem] font-semibold leading-snug">
+                    {rondaTampil.regu.nama} &middot; {rondaTampil.regu.pos}
+                  </p>
+                  {d.rondaMalamIni && (
+                    <p className="mt-0.5 text-[0.875rem] text-ink-2">
+                      Mulai pukul 22.00 WIB
+                    </p>
+                  )}
+                  {d.rondaMalamIni && (
+                    <Link
+                      to={`/ronda/${d.rondaMalamIni.night.tanggal}`}
+                      className="tautan mt-2 inline-block text-[0.9375rem]"
+                    >
+                      Lihat anggota regu
+                    </Link>
+                  )}
+                </Baris>
+              )}
+
+              {konsumsiTampil && (
+                <Baris tanda={d.konsumsiMalamIni ? "malam" : "netral"}>
+                  <p className="label">
+                    {d.konsumsiMalamIni
+                      ? "Giliran konsumsi malam ini"
+                      : `Giliran konsumsi ${tanggal(konsumsiTampil.tanggal)}`}
+                  </p>
+                  {d.konsumsiMalamIni ? (
+                    <>
+                      <p className="mt-0.5 text-[1.0625rem] font-semibold leading-snug">
+                        Rumah Anda menyiapkan konsumsi pos
+                      </p>
+                      <p className="mt-0.5 text-[0.875rem] text-ink-2">
+                        Antar ke pos sebelum pukul 22.00 WIB
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-1">
+                      <Lencana>Menunggu</Lencana>
+                    </p>
+                  )}
+                </Baris>
+              )}
+            </Bagian>
           </div>
-        </Baris>
-      )}
 
-      {!d.konsumsiMalamIni && d.konsumsiBerikutnya && (
-        <Baris tanda="netral">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="label-resmi">Giliran konsumsi</p>
-              <p className="mt-0.5 text-[15px] font-semibold">
-                {tanggal(d.konsumsiBerikutnya.tanggal)}
-              </p>
-            </div>
-            <Lencana>Menunggu</Lencana>
+          {/* Indeks layanan: satu-satunya jalan ke Sampah, Jimpitan, Konsumsi di ponsel. */}
+          <div className="reveal lg:hidden" style={urut(3)}>
+            <Bagian judul="Semua layanan">
+              {LAYANAN.map((m) => (
+                <Baris key={m.to} to={m.to}>
+                  <div className="flex items-center gap-3">
+                    <Ikon nama={m.ikon} ukuran={20} className="text-ink-2" />
+                    <div className="min-w-0">
+                      <p className="text-[1rem] font-semibold leading-tight">{m.label}</p>
+                      <p className="label mt-0.5">{m.ket}</p>
+                    </div>
+                  </div>
+                </Baris>
+              ))}
+            </Bagian>
           </div>
-        </Baris>
-      )}
-
-      {/* Arisan */}
-      {d.statusArisan && (
-        <Bagian judul="Arisan">
-          <Baris tanda={d.statusArisan.sudahBayar ? "lunas" : "tunggak"} to="/arisan">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[15px] font-semibold">
-                  Periode {d.statusArisan.nomorPeriode} dari{" "}
-                  {d.statusArisan.cycle.totalPeriode}
-                </p>
-                <p className="mt-0.5 text-[13px] text-pensil">
-                  {d.statusArisan.sudahBayar ? "Setoran sudah masuk" : "Setoran belum masuk"}
-                  {" · "}
-                  {d.statusArisan.menangPeriode
-                    ? `Menang periode ${d.statusArisan.menangPeriode}`
-                    : "Belum pernah menang"}
-                </p>
-              </div>
-              <Uang nilai={d.statusArisan.cycle.iuranPerPeriode} className="text-[13px]" />
-            </div>
-          </Baris>
-        </Bagian>
-      )}
-
-      {/* Jimpitan rumah ini bulan berjalan */}
-      <Bagian judul={`Jimpitan ${namaPeriode(d.hariIni)}`}>
-        <Baris tanda="netral" to="/jimpitan">
-          <div className="flex items-center justify-between">
-            <p className="text-[15px]">Terkumpul dari rumah Anda</p>
-            <Uang nilai={d.jimpitanBulanIni} className="font-semibold" />
-          </div>
-        </Baris>
-      </Bagian>
-
-      {/* Pengumuman terbaru */}
-      {d.terbaru && (
-        <Bagian
-          judul="Pengumuman terbaru"
-          kanan={
-            <Link to="/pengumuman" className="text-[12px] font-semibold text-pos">
-              Semua
-            </Link>
-          }
-        >
-          <Baris tanda="netral" to={`/pengumuman/${d.terbaru.post.id}`}>
-            <Lencana
-              nada={
-                d.terbaru.post.kategori === "berita"
-                  ? "hijau"
-                  : d.terbaru.post.kategori === "info"
-                    ? "kuning"
-                    : "netral"
-              }
-            >
-              {pengumumanSvc.LABEL_KATEGORI[d.terbaru.post.kategori]}
-            </Lencana>
-            <p className="mt-1.5 text-[15px] font-semibold leading-snug">
-              {d.terbaru.post.judul}
-            </p>
-            <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-pensil">
-              {d.terbaru.post.isi}
-            </p>
-          </Baris>
-        </Bagian>
-      )}
-
-      {/* Menu */}
-      <Bagian judul="Menu">
-        <div className="grid grid-cols-2 gap-px bg-kertas-tua">
-          {MENU.map((m) => (
-            <Link
-              key={m.to}
-              to={m.to}
-              className="bg-[#fffdf8] px-4 py-5 active:bg-kertas-tua/60"
-            >
-              <p className="text-[15px] font-semibold">{m.label}</p>
-              <p className="mt-0.5 text-[12px] text-pensil">{m.ket}</p>
-            </Link>
-          ))}
         </div>
-      </Bagian>
+
+        <div className="flex min-w-0 flex-col gap-10">
+          {d.saldo !== null && (
+            <Link
+              to="/kas"
+              className="reveal block border-t border-ink pt-5"
+              style={urut(3)}
+            >
+              <p className="label">Saldo kas RT</p>
+              <p className="angka angka-besar mt-3">{rupiah(d.saldo)}</p>
+              <p className="tautan mt-3 inline-block text-[0.9375rem]">Buka buku kas</p>
+            </Link>
+          )}
+
+          {d.statusArisan && (
+            <div className="reveal" style={urut(4)}>
+              <Bagian judul="Arisan">
+                <Baris tanda={d.statusArisan.sudahBayar ? "lunas" : "tunggak"} to="/arisan">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[1rem] font-semibold leading-snug">
+                        Periode {d.statusArisan.nomorPeriode} dari{" "}
+                        {d.statusArisan.cycle.totalPeriode}
+                      </p>
+                      <p className="mt-0.5 text-[0.875rem] text-ink-2">
+                        {d.statusArisan.sudahBayar ? "Setoran sudah masuk" : "Setoran belum masuk"}
+                        {" · "}
+                        {d.statusArisan.menangPeriode
+                          ? `Menang periode ${d.statusArisan.menangPeriode}`
+                          : "Belum pernah menang"}
+                      </p>
+                    </div>
+                    <Uang
+                      nilai={d.statusArisan.cycle.iuranPerPeriode}
+                      className="shrink-0 text-[0.9375rem]"
+                    />
+                  </div>
+                </Baris>
+              </Bagian>
+            </div>
+          )}
+
+          <div className="reveal" style={urut(4)}>
+            <Bagian judul={`Jimpitan ${namaPeriode(d.hariIni)}`}>
+              <Baris to="/jimpitan">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-[1rem]">Terkumpul dari rumah Anda</p>
+                  <Uang nilai={d.jimpitanBulanIni} className="shrink-0" />
+                </div>
+              </Baris>
+            </Bagian>
+          </div>
+
+          {d.terbaru && (
+            <div className="reveal" style={urut(4)}>
+              <Bagian
+                judul="Pengumuman terbaru"
+                kanan={
+                  <Link to="/pengumuman" className="tautan">
+                    Semua
+                  </Link>
+                }
+              >
+                <Baris to={`/pengumuman/${d.terbaru.post.id}`}>
+                  <Lencana
+                    nada={
+                      d.terbaru.post.kategori === "berita"
+                        ? "hijau"
+                        : d.terbaru.post.kategori === "info"
+                          ? "kuning"
+                          : "netral"
+                    }
+                  >
+                    {LABEL_KATEGORI[d.terbaru.post.kategori]}
+                  </Lencana>
+                  <p className="mt-2 font-display text-[1.25rem] font-semibold leading-snug">
+                    {d.terbaru.post.judul}
+                  </p>
+                  <p className="mt-1.5 line-clamp-2 text-[0.9375rem] leading-relaxed text-ink-2">
+                    {d.terbaru.post.isi}
+                  </p>
+                </Baris>
+              </Bagian>
+            </div>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

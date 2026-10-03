@@ -1,8 +1,11 @@
+import { Link } from "react-router";
 import type { Route } from "./+types/pengumuman.$id";
 import { requireUser } from "~/domain/auth";
+import { LABEL_KATEGORI } from "~/lib/kategori";
 import * as pengumumanSvc from "~/domain/pengumuman";
 import { tanggal } from "~/lib/format";
-import { Header, Lencana } from "~/ui/kit";
+import { Ikon } from "~/ui/ikon";
+import { Lencana } from "~/ui/kit";
 
 const NADA = { pengumuman: "netral", berita: "hijau", info: "kuning" } as const;
 
@@ -16,22 +19,27 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 export default function PengumumanDetail({ loaderData }: Route.ComponentProps) {
   const { post, author } = loaderData;
   return (
-    <main>
-      <Header
-        eyebrow={pengumumanSvc.LABEL_KATEGORI[post.kategori]}
-        judul={post.judul}
-        kembali="/pengumuman"
-      />
-      <article className="px-5 py-6">
-        <div className="flex items-center gap-2">
+    <main className="halaman">
+      <Link
+        to="/pengumuman"
+        className="-ml-1 mb-4 inline-flex min-h-11 items-center gap-1 rounded-md pr-3 text-[0.9375rem] font-medium text-ink-2 hover:text-ink"
+      >
+        <Ikon nama="kembali" ukuran={18} />
+        Kembali
+      </Link>
+      <article>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <Lencana nada={NADA[post.kategori]}>
-            {pengumumanSvc.LABEL_KATEGORI[post.kategori]}
+            {LABEL_KATEGORI[post.kategori]}
           </Lencana>
-          <span className="text-[12px] text-pensil">
-            {author.nama} &middot; {tanggal(post.dibuatPada.toISOString().slice(0, 10))}
-          </span>
+          <p className="label">
+            {tanggal(post.dibuatPada.toISOString().slice(0, 10))} &middot; {author.nama}
+          </p>
         </div>
-        <p className="mt-4 whitespace-pre-wrap text-[15px] leading-[1.7]">{post.isi}</p>
+        <h1 className="mt-4 max-w-[22ch] text-[2.25rem] lg:text-[3rem]">{post.judul}</h1>
+        <div className="mt-8 border-t border-ink pt-6">
+          <p className="prosa whitespace-pre-wrap">{post.isi}</p>
+        </div>
       </article>
     </main>
   );

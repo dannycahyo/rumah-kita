@@ -1,10 +1,11 @@
 import { Link } from "react-router";
 import type { Route } from "./+types/jimpitan._index";
-import { isPengurus, requireUser } from "~/domain/auth";
+import { requireUser } from "~/domain/auth";
+import { isPengurus } from "~/lib/peran";
 import * as jimpitan from "~/domain/jimpitan";
 import { HARI_INI } from "~/lib/waktu";
 import { awalBulan, namaPeriode, rupiah, tambahHari, tanggal, tanggalLengkap } from "~/lib/format";
-import { Bagian, Baris, Kosong, Lencana, TautanTombol, Uang } from "~/ui/kit";
+import { Bagian, Baris, Header, Info, Kosong, Lencana, TautanTombol, Uang } from "~/ui/kit";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const user = await requireUser(request);
@@ -29,63 +30,57 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export default function JimpitanIndex({ loaderData }: Route.ComponentProps) {
   const d = loaderData;
+  const belumDicatat = [0, 1, 2]
+    .map((i) => tambahHari(d.hariIni, -i))
+    .filter((t) => !d.malam.some((m) => m.tanggal === t));
 
   return (
-    <main>
-      <header className="bg-pos px-5 pb-6 pt-7 text-kertas">
-        <p className="label-resmi text-pos-pucat/70">
-          Jimpitan {namaPeriode(d.periode.periode)}
-        </p>
-        <p className="angka mt-1 text-[32px] font-bold leading-none">
-          {rupiah(d.periode.total)}
-        </p>
-        <p className="mt-2 text-[12px] text-pos-pucat/80">
+    <main className="halaman">
+      <Header judul="Jimpitan" />
+
+      {/* Stat-Led: total bulan ini, lalu aksi pencatatan. */}
+      <section className="border-t border-ink pt-5">
+        <p className="label">Jimpitan {namaPeriode(d.periode.periode)}</p>
+        <p className="angka angka-besar mt-3">{rupiah(d.periode.total)}</p>
+        <p className="mt-3 text-[0.9375rem] text-ink-2">
           {d.periode.malam} malam &middot; {d.periode.entri} entri &middot;{" "}
           {rupiah(d.standar)} standar per rumah
         </p>
 
         {d.bisaInput && (
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            <TautanTombol
-              to={`/jimpitan/malam/${d.hariIni}`}
-              variasi="kedua"
-              className="bg-kertas text-pos"
-            >
-              Catat malam ini
-            </TautanTombol>
-            <TautanTombol
-              to="/jimpitan/rekap"
-              variasi="kedua"
-              className="border border-pos-muda bg-transparent text-kertas"
-            >
+          <div className="mt-5 flex flex-wrap gap-3">
+            <TautanTombol to={`/jimpitan/malam/${d.hariIni}`}>Catat malam ini</TautanTombol>
+            <TautanTombol to="/jimpitan/rekap" variasi="kedua">
               Rekap &amp; setor
             </TautanTombol>
           </div>
         )}
-      </header>
+      </section>
 
       {d.periode.status === "terkunci" && (
-        <p className="margin-rule rule-netral bg-kertas-tua px-4 py-3 text-[13px]">
-          Periode ini sudah terkunci dan disetor ke kas RT.
-        </p>
+        <div className="mt-6">
+          <Info>Periode ini sudah terkunci dan disetor ke kas RT.</Info>
+        </div>
       )}
 
-      <Bagian judul="Rumah saya bulan ini">
-        <Baris tanda="netral">
-          <div className="flex items-center justify-between">
-            <p className="text-[15px]">
-              {d.user.householdKode} &middot; {d.user.householdNama}
-            </p>
-            <Uang nilai={d.rumahSaya} className="font-semibold" />
-          </div>
-        </Baris>
-      </Bagian>
+      <div className="mt-10">
+        <Bagian judul="Rumah saya bulan ini">
+          <Baris>
+            <div className="flex items-center justify-between gap-3">
+              <p className="min-w-0 text-[1rem]">
+                {d.user.householdKode} &middot; {d.user.householdNama}
+              </p>
+              <Uang nilai={d.rumahSaya} className="shrink-0" />
+            </div>
+          </Baris>
+        </Bagian>
+      </div>
 
       <Bagian
         judul="Malam terakhir"
         kanan={
           d.bisaInput ? (
-            <Link to="/jimpitan/rekap" className="text-[12px] font-semibold text-pos">
+            <Link to="/jimpitan/rekap" className="tautan">
               Semua rekap
             </Link>
           ) : undefined
@@ -101,32 +96,27 @@ export default function JimpitanIndex({ loaderData }: Route.ComponentProps) {
               to={d.bisaInput ? `/jimpitan/malam/${m.tanggal}` : undefined}
             >
               <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[15px] font-medium">{tanggalLengkap(m.tanggal)}</p>
-                  <p className="mt-0.5 text-[12px] text-pensil">{m.rumah} rumah mengisi</p>
+                <div className="min-w-0">
+                  <p className="text-[1rem] font-medium">{tanggalLengkap(m.tanggal)}</p>
+                  <p className="label mt-0.5">{m.rumah} rumah mengisi</p>
                 </div>
-                <Uang nilai={m.total} className="text-[15px] font-semibold" />
+                <Uang nilai={m.total} className="shrink-0" />
               </div>
             </Baris>
           ))
         )}
       </Bagian>
 
-      {d.bisaInput && (
+      {d.bisaInput && belumDicatat.length > 0 && (
         <Bagian judul="Malam yang belum dicatat">
-          {[0, 1, 2].map((i) => {
-            const t = tambahHari(d.hariIni, -i);
-            const ada = d.malam.some((m) => m.tanggal === t);
-            if (ada) return null;
-            return (
-              <Baris key={t} tanda="tunggak" to={`/jimpitan/malam/${t}`}>
-                <div className="flex items-center justify-between">
-                  <p className="text-[15px] font-medium">{tanggal(t)}</p>
-                  <Lencana nada="merah">Belum dicatat</Lencana>
-                </div>
-              </Baris>
-            );
-          })}
+          {belumDicatat.map((t) => (
+            <Baris key={t} tanda="tunggak" to={`/jimpitan/malam/${t}`}>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[1rem] font-medium">{tanggal(t)}</p>
+                <Lencana nada="merah">Belum dicatat</Lencana>
+              </div>
+            </Baris>
+          ))}
         </Bagian>
       )}
     </main>

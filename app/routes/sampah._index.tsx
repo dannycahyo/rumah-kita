@@ -1,10 +1,25 @@
 import { Form, useSearchParams } from "react-router";
 import type { Route } from "./+types/sampah._index";
-import { isPengurus, isKetua, requireUser } from "~/domain/auth";
+import { requireUser } from "~/domain/auth";
+import { isPengurus, isKetua } from "~/lib/peran";
 import * as sampah from "~/domain/sampah";
 import { HARI_INI } from "~/lib/waktu";
 import { awalBulan, namaPeriode, rupiah, tanggal } from "~/lib/format";
-import { Bagian, Baris, Galat, Header, Kosong, Lencana, Sukses, Tombol, Uang } from "~/ui/kit";
+import { Ikon } from "~/ui/ikon";
+import {
+  Bagian,
+  Baris,
+  Galat,
+  Header,
+  Kemajuan,
+  Kosong,
+  Lencana,
+  Ringkas,
+  Strip,
+  Sukses,
+  Tombol,
+  Uang,
+} from "~/ui/kit";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const user = await requireUser(request);
@@ -61,54 +76,86 @@ export async function action({ request }: Route.ActionArgs) {
   }
 }
 
+type BarisTagihan = {
+  id: number;
+  periode: string;
+  jumlah: number;
+  status: string;
+  jatuhTempo: string;
+  dibayarPada: string | null;
+};
+
+function TagihanWarga({ t }: { t: BarisTagihan }) {
+  const lunas = t.status === "lunas";
+  return (
+    <Baris to={`/sampah/${t.id}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[1rem] font-semibold">{namaPeriode(t.periode)}</p>
+          <p className="label mt-0.5">
+            {lunas && t.dibayarPada
+              ? `Dibayar ${tanggal(t.dibayarPada)}`
+              : `Jatuh tempo ${tanggal(t.jatuhTempo)}`}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <Uang nilai={t.jumlah} className="text-[1rem]" />
+          <Lencana nada={lunas ? "hijau" : "merah"}>{lunas ? "Lunas" : "Belum"}</Lencana>
+        </div>
+      </div>
+    </Baris>
+  );
+}
+
 export default function SampahIndex({ loaderData, actionData }: Route.ComponentProps) {
   const [, setParams] = useSearchParams();
 
   if (loaderData.peran === "warga") {
     const { tagihan, totalTunggakan } = loaderData;
+    const belumBayar = tagihan.filter((t) => t.status !== "lunas");
+    const sudahLunas = tagihan.filter((t) => t.status === "lunas");
     return (
-      <main>
-        <Header eyebrow="Iuran sampah" judul="Tagihan saya" kembali="/" />
-        {totalTunggakan > 0 && (
-          <div className="margin-rule rule-tunggak border-b border-kertas-tua bg-garis-pucat/50 px-4 py-4">
-            <p className="label-resmi text-garis">Total tunggakan</p>
-            <p className="angka mt-1 text-[24px] font-bold text-garis">
-              {rupiah(totalTunggakan)}
+      <main className="halaman">
+        <Header judul="Tagihan saya" kembali="/" />
+
+        {totalTunggakan > 0 ? (
+          <section className="border-t border-ink pt-5">
+            <p className="label">Total tunggakan</p>
+            <p className="angka angka-besar mt-3 text-accent">{rupiah(totalTunggakan)}</p>
+            <p className="mt-3 text-[0.9375rem] text-ink-2">{belumBayar.length} bulan belum dibayar</p>
+          </section>
+        ) : (
+          <section className="border-t border-ink pt-5">
+            <p className="label">Iuran sampah</p>
+            <p className="mt-2 flex items-center gap-2 font-display text-[1.5rem] font-semibold leading-tight">
+              <Ikon nama="centang" ukuran={24} className="text-ok" />
+              Tidak ada tagihan tertunggak
             </p>
-          </div>
+          </section>
         )}
-        <Bagian judul="Riwayat tagihan">
+
+        <div className="mt-10">
           {tagihan.length === 0 ? (
             <Kosong pesan="Belum ada tagihan untuk rumah Anda." />
           ) : (
-            tagihan.map((t) => (
-              <Baris
-                key={t.id}
-                tanda={t.status === "lunas" ? "lunas" : "tunggak"}
-                to={`/sampah/${t.id}`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[15px] font-semibold">{namaPeriode(t.periode)}</p>
-                    <p className="mt-0.5 text-[12px] text-pensil">
-                      {t.status === "lunas" && t.dibayarPada
-                        ? `Dibayar ${tanggal(t.dibayarPada)}`
-                        : `Jatuh tempo ${tanggal(t.jatuhTempo)}`}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <Uang nilai={t.jumlah} className="text-[15px] font-semibold" />
-                    <p className="mt-1">
-                      <Lencana nada={t.status === "lunas" ? "hijau" : "merah"}>
-                        {t.status === "lunas" ? "Lunas" : "Belum bayar"}
-                      </Lencana>
-                    </p>
-                  </div>
-                </div>
-              </Baris>
-            ))
+            <>
+              {belumBayar.length > 0 && (
+                <Bagian judul="Belum dibayar">
+                  {belumBayar.map((t) => (
+                    <TagihanWarga key={t.id} t={t} />
+                  ))}
+                </Bagian>
+              )}
+              {sudahLunas.length > 0 && (
+                <Bagian judul="Sudah lunas">
+                  {sudahLunas.map((t) => (
+                    <TagihanWarga key={t.id} t={t} />
+                  ))}
+                </Bagian>
+              )}
+            </>
           )}
-        </Bagian>
+        </div>
       </main>
     );
   }
@@ -118,17 +165,21 @@ export default function SampahIndex({ loaderData, actionData }: Route.ComponentP
   const total = daftar.rows.length;
   const persen = total ? Math.round((r.lunas / total) * 100) : 0;
 
+  const belumBayar = daftar.rows.filter(({ bill }) => bill && bill.status !== "lunas");
+  const sudahLunas = daftar.rows.filter(({ bill }) => bill && bill.status === "lunas");
+  const belumTerbit = daftar.rows.filter(({ bill }) => !bill);
+
   return (
-    <main>
+    <main className="halaman">
       <Header
-        eyebrow="Iuran sampah"
-        judul={namaPeriode(periode)}
+        judul="Iuran sampah"
         kembali="/"
         aksi={
           <select
+            aria-label="Periode"
             value={periode}
             onChange={(e) => setParams({ periode: e.target.value })}
-            className="shrink-0 border border-pos-muda bg-pos px-2 py-1.5 text-[12px] text-kertas"
+            className="input min-h-11 w-auto text-[0.9375rem]"
           >
             {(periodeTersedia.includes(periode)
               ? periodeTersedia
@@ -145,56 +196,90 @@ export default function SampahIndex({ loaderData, actionData }: Route.ComponentP
       <Sukses pesan={actionData && "sukses" in actionData ? actionData.sukses : null} />
       <Galat pesan={actionData && "galat" in actionData ? actionData.galat : null} />
 
-      {/* Rekap lunas / belum */}
-      <div className="border-b border-kertas-tua px-4 py-4">
-        <div className="flex items-baseline justify-between">
-          <p className="label-resmi">Terkumpul</p>
-          <Uang nilai={r.terkumpul} className="text-[17px] font-bold" />
+      <section className="border-t border-ink pt-5">
+        <p className="label">Terkumpul {namaPeriode(periode)}</p>
+        <p className="angka angka-besar mt-3">{rupiah(r.terkumpul)}</p>
+        <div className="mt-4">
+          <Kemajuan persen={persen} label="Tagihan lunas" />
         </div>
-        <div className="mt-2 flex h-2 overflow-hidden bg-kertas-tua">
-          <div className="bg-pos-muda" style={{ width: `${persen}%` }} />
+        <div className="mt-4">
+          <Strip>
+            <Ringkas label="Lunas" tone="hijau">
+              {r.lunas}
+            </Ringkas>
+            <Ringkas label="Belum bayar" tone={r.belum > 0 ? "merah" : undefined}>
+              {r.belum}
+            </Ringkas>
+            <Ringkas label="Belum terbit">{r.belumTerbit}</Ringkas>
+          </Strip>
         </div>
-        <p className="mt-2 text-[12px] text-pensil">
-          {r.lunas} lunas &middot; {r.belum} belum bayar
-          {r.belumTerbit > 0 && ` · ${r.belumTerbit} belum terbit`}
-        </p>
 
         {bisaTerbit && r.belumTerbit > 0 && (
-          <Form method="post" className="mt-3">
+          <Form method="post" className="mt-5">
             <input type="hidden" name="periode" value={periode} />
-            <Tombol type="submit" className="w-full">
+            <Tombol type="submit" className="btn-blok sm:w-auto">
               Terbitkan tagihan {namaPeriode(periode)}
             </Tombol>
           </Form>
         )}
-      </div>
+      </section>
 
-      <Bagian judul={`${total} rumah tangga`}>
-        {daftar.rows.map(({ household, bill }) => (
-          <Baris
-            key={household.id}
-            tanda={!bill ? "netral" : bill.status === "lunas" ? "lunas" : "tunggak"}
-            to={bill ? `/sampah/${bill.id}` : undefined}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-[15px] font-medium">
-                  <span className="angka text-pensil">{household.kode}</span>{" "}
-                  {household.namaKk}
-                </p>
-                <p className="mt-0.5 text-[12px] text-pensil">{household.alamat}</p>
-              </div>
-              {bill ? (
-                <Lencana nada={bill.status === "lunas" ? "hijau" : "merah"}>
-                  {bill.status === "lunas" ? "Lunas" : "Belum"}
-                </Lencana>
-              ) : (
-                <Lencana>Belum terbit</Lencana>
-              )}
-            </div>
-          </Baris>
-        ))}
-      </Bagian>
+      <div className="mt-10">
+        {belumBayar.length > 0 && (
+          <Bagian judul={`Belum dibayar (${belumBayar.length})`}>
+            {belumBayar.map(({ household, bill }) => (
+              <Baris key={household.id} to={`/sampah/${bill!.id}`}>
+                <RumahTangga household={household}>
+                  <Lencana nada="merah">Belum</Lencana>
+                </RumahTangga>
+              </Baris>
+            ))}
+          </Bagian>
+        )}
+        {sudahLunas.length > 0 && (
+          <Bagian judul={`Sudah lunas (${sudahLunas.length})`}>
+            {sudahLunas.map(({ household, bill }) => (
+              <Baris key={household.id} to={`/sampah/${bill!.id}`}>
+                <RumahTangga household={household}>
+                  <Lencana nada="hijau">Lunas</Lencana>
+                </RumahTangga>
+              </Baris>
+            ))}
+          </Bagian>
+        )}
+        {belumTerbit.length > 0 && (
+          <Bagian judul={`Belum ada tagihan (${belumTerbit.length})`}>
+            {belumTerbit.map(({ household }) => (
+              <Baris key={household.id}>
+                <RumahTangga household={household}>
+                  <Lencana>Belum terbit</Lencana>
+                </RumahTangga>
+              </Baris>
+            ))}
+          </Bagian>
+        )}
+        {total === 0 && <Kosong pesan="Belum ada rumah tangga terdaftar." />}
+      </div>
     </main>
+  );
+}
+
+function RumahTangga({
+  household,
+  children,
+}: {
+  household: { kode: string; namaKk: string; alamat: string };
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0">
+        <p className="truncate text-[1rem] font-medium">
+          <span className="angka text-ink-2">{household.kode}</span> {household.namaKk}
+        </p>
+        <p className="label mt-0.5 truncate">{household.alamat}</p>
+      </div>
+      <div className="shrink-0">{children}</div>
+    </div>
   );
 }

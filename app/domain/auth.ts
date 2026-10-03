@@ -3,26 +3,9 @@ import { asc, eq } from 'drizzle-orm';
 import { db } from '~/db';
 import { households, users } from '~/db/schema';
 
-export type Role = 'warga' | 'bendahara' | 'sekretaris' | 'ketua';
+import { isKetua, isPengurus, minimal, TINGKAT, type Role } from '~/lib/peran';
 
-/**
- * Hierarki peran. Ketua dan sekretaris setara: keduanya pengurus penuh.
- * Cek izin selalu lewat requireRole() - tidak pernah membandingkan string peran
- * secara langsung di route.
- */
-const TINGKAT: Record<Role, number> = {
-  warga: 0,
-  bendahara: 1,
-  sekretaris: 2,
-  ketua: 2
-};
-
-export function minimal(role: Role, minimum: Role): boolean {
-  return TINGKAT[role] >= TINGKAT[minimum];
-}
-
-export const isPengurus = (role: Role) => minimal(role, 'bendahara');
-export const isKetua = (role: Role) => minimal(role, 'sekretaris');
+export { isKetua, isPengurus, minimal, TINGKAT, type Role };
 
 // PROTOTIPE: cookie session tanpa verifikasi kata sandi sama sekali.
 // Seam autentikasi nyata: ganti isi getUser()/login() di file ini.

@@ -3,8 +3,9 @@ import { z } from "zod";
 import type { Route } from "./+types/kas.baru";
 import { requireRole } from "~/domain/auth";
 import * as kas from "~/domain/kas";
+import { KATEGORI_KELUAR, KATEGORI_MASUK } from "~/lib/kategori";
 import { HARI_INI } from "~/lib/waktu";
-import { Galat, Header, Tombol } from "~/ui/kit";
+import { Galat, Header, Medan, Tombol } from "~/ui/kit";
 
 const Input = z.object({
   tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal tidak valid."),
@@ -40,25 +41,22 @@ export default function KasBaru({ loaderData, actionData }: Route.ComponentProps
   const mengirim = nav.state === "submitting";
 
   return (
-    <main>
+    <main className="halaman">
       <Header eyebrow="Kas RT" judul="Catat transaksi" kembali="/kas" />
 
-      <Form method="post" className="px-5 py-6">
+      <Form method="post" className="space-y-5">
         <Galat pesan={actionData?.galat} />
 
-        <fieldset className="mt-4">
-          <legend className="label-resmi">Jenis</legend>
-          <div className="mt-2 grid grid-cols-2 gap-px bg-kertas-tua">
+        <fieldset>
+          <legend className="mb-1.5 text-[0.875rem] font-semibold">Jenis</legend>
+          <div className="segmen">
             {(
               [
                 ["masuk", "Pemasukan"],
                 ["keluar", "Pengeluaran"],
               ] as const
             ).map(([nilai, label], i) => (
-              <label
-                key={nilai}
-                className="flex cursor-pointer items-center justify-center gap-2 bg-[#fffdf8] px-3 py-3 text-[14px] font-semibold has-[:checked]:bg-pos has-[:checked]:text-kertas"
-              >
+              <label key={nilai}>
                 <input
                   type="radio"
                   name="jenis"
@@ -72,43 +70,36 @@ export default function KasBaru({ loaderData, actionData }: Route.ComponentProps
           </div>
         </fieldset>
 
-        <label className="mt-5 block">
-          <span className="label-resmi">Tanggal</span>
+        <Medan label="Tanggal">
           <input
             type="date"
             name="tanggal"
             defaultValue={loaderData.hariIni}
             required
-            className="mt-1.5 w-full border border-kertas-tua bg-[#fffdf8] px-3 py-3 text-[15px]"
+            className="input"
           />
-        </label>
+        </Medan>
 
-        <label className="mt-5 block">
-          <span className="label-resmi">Kategori</span>
-          <select
-            name="kategori"
-            required
-            className="mt-1.5 w-full border border-kertas-tua bg-[#fffdf8] px-3 py-3 text-[15px]"
-          >
+        <Medan label="Kategori">
+          <select name="kategori" required className="input">
             <optgroup label="Pemasukan">
-              {kas.KATEGORI_MASUK.map((k) => (
+              {KATEGORI_MASUK.map((k) => (
                 <option key={k} value={k}>
                   {k}
                 </option>
               ))}
             </optgroup>
             <optgroup label="Pengeluaran">
-              {kas.KATEGORI_KELUAR.map((k) => (
+              {KATEGORI_KELUAR.map((k) => (
                 <option key={`k-${k}`} value={k}>
                   {k}
                 </option>
               ))}
             </optgroup>
           </select>
-        </label>
+        </Medan>
 
-        <label className="mt-5 block">
-          <span className="label-resmi">Nominal (rupiah bulat)</span>
+        <Medan label="Nominal (rupiah bulat)">
           <input
             type="number"
             name="jumlah"
@@ -117,22 +108,21 @@ export default function KasBaru({ loaderData, actionData }: Route.ComponentProps
             inputMode="numeric"
             placeholder="60000"
             required
-            className="angka mt-1.5 w-full border border-kertas-tua bg-[#fffdf8] px-3 py-3 text-[17px]"
+            className="input angka"
           />
-        </label>
+        </Medan>
 
-        <label className="mt-5 block">
-          <span className="label-resmi">Keterangan</span>
+        <Medan label="Keterangan">
           <textarea
             name="keterangan"
             rows={3}
             placeholder="Beli lampu pos ronda"
             required
-            className="mt-1.5 w-full border border-kertas-tua bg-[#fffdf8] px-3 py-3 text-[15px]"
+            className="input"
           />
-        </label>
+        </Medan>
 
-        <Tombol type="submit" disabled={mengirim} className="mt-6 w-full">
+        <Tombol type="submit" disabled={mengirim} className="btn-blok sm:w-auto">
           {mengirim ? "Menyimpan..." : "Simpan transaksi"}
         </Tombol>
       </Form>

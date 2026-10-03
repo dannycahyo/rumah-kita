@@ -6,7 +6,7 @@ import * as konsumsi from "~/domain/konsumsi";
 import * as ronda from "~/domain/ronda";
 import { HARI_INI } from "~/lib/waktu";
 import { namaHari, tambahHari, tanggal } from "~/lib/format";
-import { Bagian, Baris, Galat, Header, Sukses, Tombol } from "~/ui/kit";
+import { Bagian, Baris, Galat, Header, Medan, Sukses, Tombol } from "~/ui/kit";
 
 export async function loader({ request }: Route.LoaderArgs) {
   await requireRole(request, "sekretaris");
@@ -79,93 +79,81 @@ export default function Kelola({ loaderData, actionData }: Route.ComponentProps)
   const sibuk = nav.state === "submitting";
 
   return (
-    <main>
+    <main className="halaman">
       <Header eyebrow="Ronda" judul="Kelola jadwal" kembali="/ronda" />
 
       <Sukses pesan={actionData && "sukses" in actionData ? actionData.sukses : null} />
       <Galat pesan={actionData && "galat" in actionData ? actionData.galat : null} />
 
       <Bagian judul="Buat jadwal">
-        <div className="bg-[#fffdf8] px-4 py-4">
-          <Form method="post">
-            <input type="hidden" name="maksud" value="generate" />
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block">
-                <span className="label-resmi">Dari</span>
-                <input
-                  type="date"
-                  name="dari"
-                  defaultValue={d.default.dari}
-                  className="mt-1 w-full border border-kertas-tua bg-kertas px-2 py-2.5 text-[14px]"
-                />
-              </label>
-              <label className="block">
-                <span className="label-resmi">Sampai</span>
-                <input
-                  type="date"
-                  name="sampai"
-                  defaultValue={d.default.sampai}
-                  className="mt-1 w-full border border-kertas-tua bg-kertas px-2 py-2.5 text-[14px]"
-                />
-              </label>
-            </div>
-            <Tombol type="submit" disabled={sibuk} className="mt-3 w-full">
-              {sibuk ? "Membuat..." : "Buat jadwal ronda & konsumsi"}
-            </Tombol>
-            <p className="mt-2 text-[12px] leading-relaxed text-pensil">
-              Ronda mengikuti hari tetap tiap regu. Konsumsi berputar terpisah dan
-              otomatis melewati rumah yang sedang ronda malam itu.
-            </p>
-          </Form>
-        </div>
+        <Form method="post" className="pt-4">
+          <input type="hidden" name="maksud" value="generate" />
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
+            <Medan label="Dari">
+              <input type="date" name="dari" defaultValue={d.default.dari} className="input" />
+            </Medan>
+            <Medan label="Sampai">
+              <input
+                type="date"
+                name="sampai"
+                defaultValue={d.default.sampai}
+                className="input"
+              />
+            </Medan>
+          </div>
+          <Tombol type="submit" disabled={sibuk} className="btn-blok mt-4 sm:w-auto">
+            {sibuk ? "Membuat..." : "Buat jadwal ronda & konsumsi"}
+          </Tombol>
+          <p className="mt-3 max-w-[52ch] text-[0.875rem] leading-relaxed text-ink-2">
+            Ronda mengikuti hari tetap tiap regu. Konsumsi berputar terpisah dan
+            otomatis melewati rumah yang sedang ronda malam itu.
+          </p>
+        </Form>
       </Bagian>
 
       <Bagian judul="Tukar dua malam">
-        <div className="bg-[#fffdf8] px-4 py-4">
-          <Form method="post">
-            <input type="hidden" name="maksud" value="tukar" />
-            <div className="grid grid-cols-2 gap-3">
-              {(["nightA", "nightB"] as const).map((nama, i) => (
-                <label key={nama} className="block">
-                  <span className="label-resmi">Malam {i + 1}</span>
-                  <select
-                    name={nama}
-                    defaultValue={d.malam[i]?.id}
-                    className="mt-1 w-full border border-kertas-tua bg-kertas px-2 py-2.5 text-[13px]"
-                  >
-                    {d.malam.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {tanggal(m.tanggal)} - {m.reguNama}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-            </div>
-            <Tombol type="submit" variasi="kedua" disabled={sibuk} className="mt-3 w-full">
-              Tukar regu kedua malam
-            </Tombol>
-          </Form>
-        </div>
+        <Form method="post" className="pt-4">
+          <input type="hidden" name="maksud" value="tukar" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            {(["nightA", "nightB"] as const).map((nama, i) => (
+              <Medan key={nama} label={`Malam ${i + 1}`}>
+                <select name={nama} defaultValue={d.malam[i]?.id} className="input">
+                  {d.malam.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {tanggal(m.tanggal)} - {m.reguNama}
+                    </option>
+                  ))}
+                </select>
+              </Medan>
+            ))}
+          </div>
+          <Tombol
+            type="submit"
+            variasi="kedua"
+            disabled={sibuk}
+            className="btn-blok mt-4 sm:w-auto"
+          >
+            Tukar regu kedua malam
+          </Tombol>
+        </Form>
       </Bagian>
 
       <Bagian judul="Ganti regu per malam">
         {d.malam.slice(0, 14).map((m) => (
           <Baris key={m.id} tanda="netral">
-            <Form method="post" className="flex items-center justify-between gap-3">
+            <Form method="post">
               <input type="hidden" name="maksud" value="override" />
               <input type="hidden" name="nightId" value={m.id} />
-              <div className="min-w-0">
-                <p className="text-[14px] font-medium">{tanggal(m.tanggal)}</p>
-                <p className="text-[12px] text-pensil">
-                  {namaHari(new Date(`${m.tanggal}T00:00:00Z`).getUTCDay())}
-                </p>
-              </div>
-              <div className="flex shrink-0 gap-1.5">
+              <p className="text-[1rem] font-medium leading-snug">{tanggal(m.tanggal)}</p>
+              <p className="text-[0.875rem] text-ink-2">
+                {namaHari(new Date(`${m.tanggal}T00:00:00Z`).getUTCDay())}
+              </p>
+              <div className="mt-2.5 flex gap-2">
                 <select
                   name="reguId"
                   defaultValue={m.reguId}
-                  className="border border-kertas-tua bg-kertas px-2 py-1.5 text-[13px]"
+                  aria-label={`Regu malam ${tanggal(m.tanggal)}`}
+                  className="input min-w-0 flex-1"
                 >
                   {d.regu.map((r) => (
                     <option key={r.id} value={r.id}>
@@ -173,9 +161,9 @@ export default function Kelola({ loaderData, actionData }: Route.ComponentProps)
                     </option>
                   ))}
                 </select>
-                <button className="border border-kertas-tua bg-kertas-tua px-2.5 py-1.5 text-[12px] font-semibold">
+                <Tombol type="submit" variasi="kedua">
                   Simpan
-                </button>
+                </Tombol>
               </div>
             </Form>
           </Baris>

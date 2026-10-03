@@ -4,7 +4,21 @@ import { requireRole } from "~/domain/auth";
 import * as jimpitan from "~/domain/jimpitan";
 import { HARI_INI } from "~/lib/waktu";
 import { akhirBulan, awalBulan, namaPeriode, rupiah, tanggalLengkap } from "~/lib/format";
-import { Bagian, Baris, Galat, Header, Kosong, Lencana, Sukses, Tombol, Uang } from "~/ui/kit";
+import {
+  Bagian,
+  Baris,
+  Cap,
+  Galat,
+  Header,
+  Kosong,
+  Lencana,
+  Ringkas,
+  Strip,
+  Sukses,
+  Tabs,
+  Tombol,
+  Uang,
+} from "~/ui/kit";
 
 export async function loader({ request }: Route.LoaderArgs) {
   await requireRole(request, "bendahara");
@@ -55,7 +69,7 @@ export default function Rekap({ loaderData, actionData }: Route.ComponentProps) 
   }
 
   return (
-    <main>
+    <main className="halaman">
       <Header
         eyebrow="Jimpitan"
         judul={`Rekap ${namaPeriode(periode)}`}
@@ -64,7 +78,8 @@ export default function Rekap({ loaderData, actionData }: Route.ComponentProps) 
           <select
             value={periode}
             onChange={(e) => set("periode", e.target.value)}
-            className="shrink-0 border border-pos-muda bg-pos px-2 py-1.5 text-[12px] text-kertas"
+            aria-label="Periode"
+            className="input w-auto max-w-[9.5rem]"
           >
             {(bulan.includes(periode) ? bulan : [periode, ...bulan]).map((b) => (
               <option key={b} value={b}>
@@ -78,107 +93,98 @@ export default function Rekap({ loaderData, actionData }: Route.ComponentProps) 
       <Sukses pesan={actionData && "sukses" in actionData ? actionData.sukses : null} />
       <Galat pesan={actionData && "galat" in actionData ? actionData.galat : null} />
 
-      {/* Total periode + setor ke kas */}
-      <div
-        className={`margin-rule ${terkunci ? "rule-lunas" : "rule-malam"} border-b border-kertas-tua px-4 py-5 ${
-          terkunci ? "bg-pos-pucat/40" : "bg-lampu-pucat/50"
-        }`}
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="label-resmi">Total periode</p>
-            <p className="angka mt-1 text-[30px] font-bold leading-none">
-              {rupiah(ringkasan.total)}
-            </p>
-            <p className="mt-1.5 text-[12px] text-pensil">
-              {ringkasan.malam} malam &middot; {ringkasan.entri} entri
-            </p>
-          </div>
-          <Lencana nada={terkunci ? "hijau" : "kuning"}>
-            {terkunci ? "Terkunci" : "Terbuka"}
-          </Lencana>
+      {/* Stat-Led: total periode, lalu setor ke kas. */}
+      <section className="border-t border-ink pt-5">
+        <div className="flex items-start justify-between gap-3">
+          <p className="label">Total periode</p>
+          {terkunci ? <Cap>Terkunci</Cap> : <Lencana nada="kuning">Terbuka</Lencana>}
+        </div>
+        <p className="angka angka-besar mt-3">{rupiah(ringkasan.total)}</p>
+
+        <div className="mt-5">
+          <Strip>
+            <Ringkas label="Malam">{ringkasan.malam}</Ringkas>
+            <Ringkas label="Entri">{ringkasan.entri}</Ringkas>
+          </Strip>
         </div>
 
         {terkunci ? (
-          <p className="mt-3 text-[13px] leading-relaxed text-pensil">
+          <p className="mt-4 text-[0.9375rem] leading-relaxed text-ink-2">
             Sudah disetor ke kas RT sebagai satu baris pemasukan.
           </p>
         ) : (
-          <Form method="post" className="mt-4">
+          <Form method="post" className="mt-5">
             <input type="hidden" name="periode" value={periode} />
             <Tombol
               type="submit"
               disabled={nav.state === "submitting" || ringkasan.total === 0}
-              className="w-full"
+              className="btn-blok sm:w-auto"
             >
-              {nav.state === "submitting"
-                ? "Menyetor..."
-                : `Tutup periode & setor ${rupiah(ringkasan.total)} ke kas`}
+              {nav.state === "submitting" ? "Menyetor..." : "Tutup periode & setor"}
             </Tombol>
-            <p className="mt-2 text-[12px] leading-relaxed text-pensil">
-              Seluruh jimpitan bulan ini masuk kas sebagai satu pemasukan, lalu
-              periode dikunci agar entri tidak berubah lagi.
+            <p className="label mt-2.5 max-w-[52ch] leading-relaxed">
+              Seluruh jimpitan bulan ini masuk kas sebagai satu pemasukan, lalu periode
+              dikunci agar entri tidak berubah lagi.
             </p>
           </Form>
         )}
+      </section>
+
+      <div className="mt-10">
+        <Tabs
+          label="Tampilan rekap"
+          nilai={tab}
+          onPilih={(v) => set("tab", v)}
+          pilihan={
+            [
+              ["rumah", "Per rumah"],
+              ["malam", "Per malam"],
+            ] as const
+          }
+        />
       </div>
 
-      {/* Tab rumah / malam */}
-      <div className="grid grid-cols-2 gap-px border-b border-kertas-tua bg-kertas-tua">
-        {(
-          [
-            ["rumah", "Per rumah"],
-            ["malam", "Per malam"],
-          ] as const
-        ).map(([nilai, label]) => (
-          <button
-            key={nilai}
-            onClick={() => set("tab", nilai)}
-            className={`py-3 text-[13px] font-semibold ${
-              tab === nilai ? "bg-[#fffdf8] text-pos" : "bg-kertas text-pensil"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "rumah" ? (
-        <Bagian judul={`${perRumah.length} rumah tangga`}>
-          {perRumah.map((r) => (
-            <Baris key={r.household.id} tanda={r.total > 0 ? "lunas" : "tunggak"}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate text-[15px] font-medium">
-                    <span className="angka text-pensil">{r.household.kode}</span>{" "}
-                    {r.household.namaKk}
-                  </p>
-                  <p className="mt-0.5 text-[12px] text-pensil">{r.malam} malam mengisi</p>
-                </div>
-                <Uang nilai={r.total} className="text-[15px] font-semibold" />
-              </div>
-            </Baris>
-          ))}
-        </Bagian>
-      ) : (
-        <Bagian judul={`${perMalam.length} malam`}>
-          {perMalam.length === 0 ? (
-            <Kosong pesan="Belum ada entri di periode ini." />
-          ) : (
-            perMalam.map((m) => (
-              <Baris key={m.tanggal} tanda="netral" to={`/jimpitan/malam/${m.tanggal}`}>
+      <div className="mt-6">
+        {tab === "rumah" ? (
+          <Bagian judul={`${perRumah.length} rumah tangga`}>
+            {perRumah.map((r) => (
+              <Baris key={r.household.id}>
                 <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[15px] font-medium">{tanggalLengkap(m.tanggal)}</p>
-                    <p className="mt-0.5 text-[12px] text-pensil">{m.rumah} rumah</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-[1rem] font-medium">
+                      <span className="angka text-ink-2">{r.household.kode}</span>{" "}
+                      {r.household.namaKk}
+                    </p>
+                    <p className="label mt-0.5">{r.malam} malam mengisi</p>
                   </div>
-                  <Uang nilai={m.total} className="text-[15px] font-semibold" />
+                  <Uang
+                    nilai={r.total}
+                    className={`shrink-0 ${r.total > 0 ? "" : "text-ink-3"}`}
+                  />
                 </div>
               </Baris>
-            ))
-          )}
-        </Bagian>
-      )}
+            ))}
+          </Bagian>
+        ) : (
+          <Bagian judul={`${perMalam.length} malam`}>
+            {perMalam.length === 0 ? (
+              <Kosong pesan="Belum ada entri di periode ini." />
+            ) : (
+              perMalam.map((m) => (
+                <Baris key={m.tanggal} tanda="netral" to={`/jimpitan/malam/${m.tanggal}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[1rem] font-medium">{tanggalLengkap(m.tanggal)}</p>
+                      <p className="label mt-0.5">{m.rumah} rumah</p>
+                    </div>
+                    <Uang nilai={m.total} className="shrink-0" />
+                  </div>
+                </Baris>
+              ))
+            )}
+          </Bagian>
+        )}
+      </div>
     </main>
   );
 }

@@ -10,17 +10,17 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { getUser } from "~/domain/auth";
+import { akunDemo, getUser } from "~/domain/auth";
+import { BarAtas } from "~/ui/BarAtas";
 import { BottomNav } from "~/ui/BottomNav";
-import { RoleSwitcher } from "~/ui/RoleSwitcher";
-import { akunDemo } from "~/domain/auth";
+import { Rail, Wordmark } from "~/ui/Rail";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400..800;1,400..700&family=Inter+Tight:ital,wght@0,300..700;1,300..700&family=JetBrains+Mono:wght@400;500;700&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap",
   },
 ];
 
@@ -42,8 +42,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="id">
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#1b4332" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#f6f2ea" />
         <title>RT 04 - Rumah Kita</title>
         <Meta />
         <Links />
@@ -61,18 +61,16 @@ export default function App({ loaderData }: Route.ComponentProps) {
   const { user, akun } = loaderData;
   const location = useLocation();
   const diHalamanMasuk = location.pathname === "/masuk";
+  const chrome = user && !diHalamanMasuk;
 
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-[#fffdf8] shadow-[0_0_60px_rgba(45,42,38,0.06)]">
-      <div className={user && !diHalamanMasuk ? "pb-40" : ""}>
+    <div className={chrome ? "shell shell-app" : "shell"}>
+      {chrome && <Rail user={user} akun={akun} />}
+      <div className="min-w-0">
+        {chrome && <BarAtas akun={akun} aktif={user.id} />}
         <Outlet />
       </div>
-      {user && !diHalamanMasuk && (
-        <>
-          <BottomNav />
-          <RoleSwitcher akun={akun} aktif={user.id} />
-        </>
-      )}
+      {chrome && <BottomNav />}
     </div>
   );
 }
@@ -102,18 +100,17 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="mx-auto min-h-dvh w-full max-w-[430px] bg-[#fffdf8] px-5 py-16">
-      <p className="label-resmi">RT 04</p>
-      <h1 className="mt-2 text-2xl font-bold">{judul}</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-pensil">{pesan}</p>
-      <a
-        href="/"
-        className="mt-8 inline-block bg-pos px-5 py-3 text-sm font-semibold text-kertas"
-      >
+    <main className="halaman">
+      <div className="mb-10">
+        <Wordmark ukuran="kecil" />
+      </div>
+      <h1 className="text-[2rem] lg:text-[2.5rem]">{judul}</h1>
+      <p className="mt-3 max-w-[44ch] text-[1.0625rem] leading-relaxed text-ink-2">{pesan}</p>
+      <a href="/" className="btn btn-utama mt-8">
         Kembali ke Beranda
       </a>
       {stack && (
-        <pre className="mt-8 overflow-x-auto bg-kertas-tua p-3 text-[11px] leading-relaxed">
+        <pre className="mt-8 overflow-x-auto rounded-lg bg-paper-2 p-3 text-[0.75rem] leading-relaxed">
           <code>{stack}</code>
         </pre>
       )}

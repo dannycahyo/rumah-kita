@@ -2,8 +2,9 @@ import { Form, redirect, useNavigation } from "react-router";
 import { z } from "zod";
 import type { Route } from "./+types/pengumuman.baru";
 import { requireRole } from "~/domain/auth";
+import { LABEL_KATEGORI } from "~/lib/kategori";
 import * as pengumumanSvc from "~/domain/pengumuman";
-import { Galat, Header, Tombol } from "~/ui/kit";
+import { Galat, Header, Medan, Tombol } from "~/ui/kit";
 
 const Input = z.object({
   kategori: z.enum(["pengumuman", "berita", "info"]),
@@ -29,19 +30,16 @@ export default function PengumumanBaru({ actionData }: Route.ComponentProps) {
   const nav = useNavigation();
 
   return (
-    <main>
+    <main className="halaman">
       <Header eyebrow="Papan pengumuman" judul="Tulis pengumuman" kembali="/pengumuman" />
-      <Form method="post" className="px-5 py-6">
+      <Form method="post" className="flex flex-col gap-5">
         <Galat pesan={actionData?.galat} />
 
-        <fieldset className="mt-4">
-          <legend className="label-resmi">Kategori</legend>
-          <div className="mt-2 grid grid-cols-3 gap-px bg-kertas-tua">
+        <fieldset>
+          <legend className="mb-1.5 text-[0.875rem] font-semibold">Kategori</legend>
+          <div className="segmen [&>label]:px-1 [&>label]:text-[0.875rem]">
             {(["pengumuman", "berita", "info"] as const).map((k, i) => (
-              <label
-                key={k}
-                className="flex cursor-pointer items-center justify-center bg-[#fffdf8] px-2 py-3 text-[13px] font-semibold has-[:checked]:bg-pos has-[:checked]:text-kertas"
-              >
+              <label key={k}>
                 <input
                   type="radio"
                   name="kategori"
@@ -49,39 +47,41 @@ export default function PengumumanBaru({ actionData }: Route.ComponentProps) {
                   defaultChecked={i === 0}
                   className="sr-only"
                 />
-                {pengumumanSvc.LABEL_KATEGORI[k]}
+                {LABEL_KATEGORI[k]}
               </label>
             ))}
           </div>
         </fieldset>
 
-        <label className="mt-5 block">
-          <span className="label-resmi">Judul</span>
+        <Medan label="Judul">
           <input
             name="judul"
             required
             placeholder="Kerja bakti Minggu pagi"
-            className="mt-1.5 w-full border border-kertas-tua bg-[#fffdf8] px-3 py-3 text-[15px]"
+            className="input"
           />
-        </label>
+        </Medan>
 
-        <label className="mt-5 block">
-          <span className="label-resmi">Isi</span>
+        <Medan label="Isi">
           <textarea
             name="isi"
             rows={9}
             required
             placeholder="Diberitahukan kepada seluruh warga RT 04..."
-            className="mt-1.5 w-full border border-kertas-tua bg-[#fffdf8] px-3 py-3 text-[15px] leading-relaxed"
+            className="input"
           />
-        </label>
+        </Medan>
 
-        <Tombol type="submit" disabled={nav.state === "submitting"} className="mt-6 w-full">
-          {nav.state === "submitting" ? "Menerbitkan..." : "Terbitkan"}
-        </Tombol>
-        <p className="mt-3 text-[12px] leading-relaxed text-pensil">
-          Notifikasi ke warga belum aktif di prototipe ini.
-        </p>
+        <div>
+          <Tombol
+            type="submit"
+            disabled={nav.state === "submitting"}
+            className="btn-blok sm:inline-flex sm:w-auto"
+          >
+            {nav.state === "submitting" ? "Menerbitkan..." : "Terbitkan"}
+          </Tombol>
+          <p className="label mt-3">Notifikasi ke warga belum aktif di prototipe ini.</p>
+        </div>
       </Form>
     </main>
   );

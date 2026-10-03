@@ -3,20 +3,9 @@ import { db } from '~/db';
 import { kasTransactions } from '~/db/schema';
 import { akhirBulan, awalBulan } from '~/lib/format';
 
-export const KATEGORI_MASUK = [
-  'Iuran sampah',
-  'Jimpitan',
-  'Sumbangan',
-  'Lain-lain'
-] as const;
+import { KATEGORI_KELUAR, KATEGORI_MASUK } from '~/lib/kategori';
 
-export const KATEGORI_KELUAR = [
-  'Operasional ronda',
-  'Kebersihan',
-  'Perbaikan',
-  'Kegiatan warga',
-  'Lain-lain'
-] as const;
+export { KATEGORI_KELUAR, KATEGORI_MASUK };
 
 export type PostInput = {
   tanggal: string;

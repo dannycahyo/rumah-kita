@@ -5,7 +5,8 @@ import type { Route } from "./+types/jimpitan.malam.$tanggal";
 import { requireRole } from "~/domain/auth";
 import * as jimpitan from "~/domain/jimpitan";
 import { rupiah, tambahHari, tanggalLengkap } from "~/lib/format";
-import { Galat, Header, Sukses } from "~/ui/kit";
+import { Ikon } from "~/ui/ikon";
+import { BarTempel, Galat, Header, Info, Sukses, Tombol } from "~/ui/kit";
 
 const Tanggal = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -81,63 +82,61 @@ export default function MalamJimpitan({ loaderData, actionData }: Route.Componen
   }
 
   return (
-    <main className="pb-44">
-      <Header
-        eyebrow="Jimpitan malam"
-        judul={tanggalLengkap(tanggal)}
-        kembali="/jimpitan"
-      />
+    <main className="halaman pb-44">
+      <Header eyebrow="Jimpitan" judul={tanggalLengkap(tanggal)} kembali="/jimpitan" />
 
-      <div className="flex items-center justify-between border-b border-kertas-tua px-4 py-2.5">
+      {/* Tautan biasa (bukan Link): memuat ulang supaya state lokal malam lain bersih. */}
+      <nav
+        aria-label="Pindah malam"
+        className="-mt-3 mb-5 flex items-center justify-between gap-3 text-[0.875rem] font-semibold"
+      >
         <a
           href={`/jimpitan/malam/${tambahHari(tanggal, -1)}`}
-          className="text-[13px] font-semibold text-pos"
+          className="-ml-1 inline-flex min-h-11 items-center gap-1 pr-2 text-ink-2 hover:text-ink"
         >
-          ← Malam sebelumnya
+          <Ikon nama="kembali" ukuran={16} />
+          Malam sebelumnya
         </a>
         <a
           href={`/jimpitan/malam/${tambahHari(tanggal, 1)}`}
-          className="text-[13px] font-semibold text-pos"
+          className="-mr-1 inline-flex min-h-11 items-center gap-1 pl-2 text-ink-2 hover:text-ink"
         >
-          Malam berikutnya →
+          Malam berikutnya
+          <Ikon nama="panah" ukuran={16} />
         </a>
-      </div>
+      </nav>
 
       <Sukses pesan={actionData && "sukses" in actionData ? actionData.sukses : null} />
       <Galat pesan={actionData && "galat" in actionData ? actionData.galat : null} />
 
       {terkunci && (
-        <p className="margin-rule rule-netral bg-kertas-tua px-4 py-3 text-[13px]">
-          Periode bulan ini sudah <strong>terkunci</strong> dan sudah disetor ke kas
-          RT. Entri tidak bisa diubah lagi.
-        </p>
+        <Info>
+          Periode bulan ini sudah terkunci dan sudah disetor ke kas RT. Entri tidak bisa
+          diubah lagi.
+        </Info>
       )}
 
       {!terkunci && (
-        <div className="flex items-center justify-between border-b border-kertas-tua px-4 py-2.5">
-          <p className="text-[12px] text-pensil">
-            Ketuk baris untuk mengisi {rupiah(standar)}
-          </p>
-          <button
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="label min-w-0">Ketuk baris untuk mengisi {rupiah(standar)}</p>
+          <Tombol
             onClick={semua}
             type="button"
-            className="text-[12px] font-semibold text-pos underline underline-offset-2"
+            variasi="kedua"
+            className="btn-kecil min-h-11 shrink-0"
           >
             Isi semua
-          </button>
+          </Tombol>
         </div>
       )}
 
       <Form method="post" id="malam">
-        <ul>
+        <ul className="daftar">
           {rows.map(({ household }) => {
             const v = nilai[household.id];
             const aktif = v != null && v > 0;
             return (
-              <li
-                key={household.id}
-                className={`baris margin-rule ${aktif ? "rule-lunas" : "rule-netral"} flex items-center gap-3 px-3 py-2.5`}
-              >
+              <li key={household.id} className="baris flex items-center gap-1">
                 <input type="hidden" name={`kk_${household.id}`} value={v ?? 0} />
 
                 <button
@@ -145,55 +144,52 @@ export default function MalamJimpitan({ loaderData, actionData }: Route.Componen
                   onClick={() => toggle(household.id)}
                   disabled={terkunci}
                   aria-pressed={aktif}
-                  className="flex min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-60"
+                  className="flex min-h-12 min-w-0 flex-1 items-center gap-3 text-left disabled:opacity-60"
                 >
                   <span
                     aria-hidden
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center border text-[13px] font-bold ${
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
                       aktif
-                        ? "border-pos-muda bg-pos-muda text-kertas"
-                        : "border-kertas-tua bg-[#fffdf8] text-kertas-tua"
+                        ? "border-ink bg-ink text-paper"
+                        : "border-rule-strong bg-sheet text-transparent"
                     }`}
                   >
-                    ✓
+                    <Ikon nama="centang" ukuran={16} tebal={2.2} />
                   </span>
-                  <span className="min-w-0">
-                    <span className="angka text-[13px] font-semibold text-pensil">
-                      {household.kode}
-                    </span>
-                    <span className="ml-2 text-[14px]">{household.namaKk}</span>
+                  <span className="min-w-0 truncate text-[1rem] leading-tight">
+                    <span className="angka mr-2 text-ink-2">{household.kode}</span>
+                    {household.namaKk}
                   </span>
                 </button>
 
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <span
-                    className={`angka w-[74px] text-right text-[14px] font-semibold ${
-                      aktif ? "" : "text-kertas-tua"
-                    }`}
-                  >
-                    {aktif ? rupiah(v!) : "—"}
+                <span
+                  className={`angka w-[4.5rem] shrink-0 text-right text-[0.9375rem] ${
+                    aktif ? "" : "text-ink-3"
+                  }`}
+                >
+                  {aktif ? rupiah(v!) : terkunci ? "—" : ""}
+                </span>
+
+                {!terkunci && (
+                  <span className="flex shrink-0 items-center">
+                    <button
+                      type="button"
+                      onClick={() => ubah(household.id, -500)}
+                      aria-label={`Kurangi 500 untuk ${household.kode}`}
+                      className="flex h-11 w-11 items-center justify-center rounded-md text-ink-2 hover:bg-paper-2"
+                    >
+                      <Ikon nama="kurang" ukuran={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => ubah(household.id, 500)}
+                      aria-label={`Tambah 500 untuk ${household.kode}`}
+                      className="flex h-11 w-11 items-center justify-center rounded-md text-ink-2 hover:bg-paper-2"
+                    >
+                      <Ikon nama="tambah" ukuran={18} />
+                    </button>
                   </span>
-                  {!terkunci && (
-                    <span className="flex flex-col">
-                      <button
-                        type="button"
-                        onClick={() => ubah(household.id, 500)}
-                        aria-label={`Tambah 500 untuk ${household.kode}`}
-                        className="h-6 w-7 border border-kertas-tua bg-[#fffdf8] text-[11px] leading-none"
-                      >
-                        +
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => ubah(household.id, -500)}
-                        aria-label={`Kurangi 500 untuk ${household.kode}`}
-                        className="h-6 w-7 border border-t-0 border-kertas-tua bg-[#fffdf8] text-[11px] leading-none"
-                      >
-                        −
-                      </button>
-                    </span>
-                  )}
-                </div>
+                )}
               </li>
             );
           })}
@@ -202,26 +198,17 @@ export default function MalamJimpitan({ loaderData, actionData }: Route.Componen
 
       {/* Total berjalan + satu tombol simpan, menempel di bawah. */}
       {!terkunci && (
-        <div className="fixed bottom-[106px] left-1/2 z-20 w-full max-w-[430px] -translate-x-1/2 border-t border-kertas-tua bg-[#fffdf8] px-4 py-3 shadow-[0_-4px_16px_rgba(45,42,38,0.08)]">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="label-resmi">
-                {terisi} dari {rows.length} rumah
-              </p>
-              <p className="angka text-[20px] font-bold leading-tight">
-                {rupiah(total)}
-              </p>
-            </div>
-            <button
-              type="submit"
-              form="malam"
-              disabled={menyimpan}
-              className="bg-pos px-6 py-3.5 text-[15px] font-semibold text-kertas disabled:opacity-40"
-            >
-              {menyimpan ? "Menyimpan..." : "Simpan malam ini"}
-            </button>
+        <BarTempel>
+          <div className="min-w-0">
+            <p className="label">
+              {terisi} dari {rows.length} rumah
+            </p>
+            <p className="angka text-[1.375rem] leading-tight">{rupiah(total)}</p>
           </div>
-        </div>
+          <Tombol type="submit" form="malam" disabled={menyimpan} className="shrink-0">
+            {menyimpan ? "Menyimpan..." : "Simpan malam ini"}
+          </Tombol>
+        </BarTempel>
       )}
     </main>
   );

@@ -2,13 +2,9 @@ import { and, desc, eq, ilike, or, type SQL } from 'drizzle-orm';
 import { db } from '~/db';
 import { pengumuman, users } from '~/db/schema';
 
-export type Kategori = 'pengumuman' | 'berita' | 'info';
+import { LABEL_KATEGORI, type Kategori } from '~/lib/kategori';
 
-export const LABEL_KATEGORI: Record<Kategori, string> = {
-  pengumuman: 'Pengumuman',
-  berita: 'Berita',
-  info: 'Info'
-};
+export { LABEL_KATEGORI, type Kategori };
 
 export async function list(opts: { kategori?: Kategori; cari?: string } = {}) {
   const conds: SQL[] = [];
