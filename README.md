@@ -1,112 +1,117 @@
-# Rumah Kita — aplikasi manajemen RT
+# Rumah Kita — RT management app
 
-Prototipe aplikasi untuk satu RT (Rukun Tetangga) Indonesia: buku kas, iuran
-sampah, jimpitan malam, jadwal ronda, konsumsi pos, arisan, dan pengumuman.
-Seluruh antarmuka dalam Bahasa Indonesia, dirancang untuk layar ponsel.
+Prototype app for a single Indonesian RT (Rukun Tetangga, neighbourhood
+association): treasury ledger, rubbish fees, nightly jimpitan, ronda schedule,
+pos meals, arisan, and announcements. The entire UI is in Bahasa Indonesia,
+designed for phone screens.
 
-**Prototipe — bukan untuk dipakai sungguhan.** Tidak ada verifikasi kata sandi,
-dan pengalih peran demo memberi akses penuh ke siapa pun yang membuka aplikasi.
+**Prototype — not for real use.** There is no password check, and the demo role
+switcher gives full access to anyone who opens the app.
 
-## Menjalankan
+Domain terms (KK, warga, pengurus, kas, jimpitan, ronda, regu, arisan, …) are
+kept untranslated, in code and docs alike. See the vocabulary table in
+[`docs/ONBOARDING.md`](docs/ONBOARDING.md#1-vocabulary).
+
+## Running
 
 ```bash
-docker compose up -d     # Postgres 16 di port 5433
+docker compose up -d     # Postgres 16 on port 5433
 npm install
-npm run db:push          # buat 15 tabel
-npm run db:seed          # data demo + pemeriksaan invarian
+npm run db:push          # create 15 tables
+npm run db:seed          # demo data + invariant checks
 npm run dev              # http://localhost:5173
 ```
 
-### Akun demo
+### Demo accounts
 
-Tanpa kata sandi. Pilih di layar masuk, atau berpindah kapan saja lewat
-pengalih peran di pojok kanan bawah.
+No password. Pick one on the login screen, or switch at any time with the role
+switcher at the bottom-right.
 
-| Akun | Peran | Rumah |
+| Account | Role | House |
 |---|---|---|
-| `budi@rt04.id` | Warga | A3 — punya tunggakan 3 bulan |
-| `sri@rt04.id` | Bendahara | A7 — sudah menang arisan periode 2 |
+| `budi@rt04.id` | Warga | A3 — 3 months in arrears |
+| `sri@rt04.id` | Bendahara | A7 — already won arisan period 2 |
 | `agus@rt04.id` | Ketua RT | A1 |
 | `dewi@rt04.id` | Sekretaris | B2 |
 
-### Perintah lain
+### Other commands
 
 ```bash
 npm run typecheck        # react-router typegen && tsc
-npm run test:e2e         # Playwright, viewport 390x844 (seed ulang otomatis)
+npm run test:e2e         # Playwright, 390x844 viewport (reseeds automatically)
 ```
 
-## Data demo
+## Demo data
 
-Dijangkarkan pada **23 Agustus 2026** (`app/lib/waktu.ts`) supaya demo selalu
-konsisten: ada ronda malam ini, ada tunggakan, ada periode arisan berjalan.
-Ganti `HARI_INI` di berkas itu untuk memakai tanggal sistem.
+Pinned to **23 August 2026** (`app/lib/waktu.ts`) so the demo is always
+consistent: there is a ronda tonight, there are arrears, and an arisan period is
+in progress. Change `HARI_INI` in that file to use the system date.
 
-52 KK · 58 pengguna · 7 regu · 122 malam ronda + konsumsi · 3.772 entri
-jimpitan · arisan periode 4 dari 24 · saldo kas ≈ Rp 8,5 juta.
+52 KK · 58 users · 7 regu · 122 ronda + konsumsi nights · 3,772 jimpitan
+entries · arisan period 4 of 24 · kas balance ≈ Rp 8.5 million.
 
-## Struktur
+## Structure
 
 ```
 app/
-  db/          skema Drizzle (15 tabel), klien, seed
-  domain/      seluruh logika & aturan bisnis — satu-satunya jalur menulis
-  routes/      20 route React Router (loader → service → render)
-  ui/          kit komponen bersama, navigasi, pengalih peran
-  lib/         format rupiah & tanggal Indonesia, tanggal demo
-e2e/           smoke test Playwright
+  db/          Drizzle schema (15 tables), client, seed
+  domain/      all business logic & rules — the only write path
+  routes/      20 React Router routes (loader → service → render)
+  ui/          shared component kit, navigation, role switcher
+  lib/         rupiah & Indonesian date formatting, demo date
+e2e/           Playwright smoke tests
 ```
 
-Route tidak pernah menyentuh Drizzle langsung. Pola tiap route:
-Zod-parse → `requireRole` → panggil satu service → render.
+Routes never touch Drizzle directly. Every route follows the same pattern:
+Zod-parse → `requireRole` → call one service → render.
 
-## Aturan domain yang dijaga
+## Domain rules enforced
 
-| Aturan | Dijaga oleh |
+| Rule | Enforced by |
 |---|---|
-| Jimpitan per-malam, sampah per-bulan | Dua tabel terpisah + unique index masing-masing |
-| Uang selalu rupiah bulat | Kolom `integer` di seluruh skema |
-| Saldo kas selalu diturunkan | Tidak ada kolom saldo; `kas.balance()` menjumlah transaksi |
-| Satu anggota menang sekali per siklus | `arisan.draw()` + partial unique index `arisan_pemenang_sekali_unik` |
-| Ronda & konsumsi dua rotasi independen | Tabel terpisah berkunci tanggal yang sama |
-| Satu KK = unit tagihan & tugas | `users.household_id`; beberapa user boleh satu KK |
+| Jimpitan per night, sampah per month | Two separate tables, each with its own unique index |
+| Money is always whole rupiah | `integer` columns throughout the schema |
+| Kas balance is always derived | No balance column; `kas.balance()` sums transactions |
+| One win per member per cycle | `arisan.draw()` + partial unique index `arisan_pemenang_sekali_unik` |
+| Ronda & konsumsi are two independent rotations | Separate tables keyed by the same date |
+| One KK = billing & duty unit | `users.household_id`; several users may share one KK |
 
-Tambahan: partial unique index pada `(sumber_tipe, sumber_id)` di
-`kas_transactions` membuat satu tagihan atau satu periode jimpitan mustahil
-disetor dua kali.
+Additionally, a partial unique index on `(sumber_tipe, sumber_id)` in
+`kas_transactions` makes it impossible for one bill or one jimpitan period to be
+posted twice.
 
-## Verifikasi
+## Verification
 
-Tiga lapis, tanpa unit test (ini prototipe):
+Three layers, no unit tests (this is a prototype):
 
-1. **Database** — unique index & tipe kolom membuat sebagian aturan mustahil
-   dilanggar walau kode aplikasi salah.
-2. **Seed** — memanggil service asli lalu memeriksa lima invarian: saldo kas
-   cocok, nol bentrok konsumsi vs ronda, kandidat kocokan tepat 21, tiap
-   periode terkunci punya tepat satu baris kas, tiap tagihan lunas punya tepat
-   satu baris kas.
-3. **Playwright** (`e2e/smoke.spec.ts`) — 8 tes pada viewport ponsel: perjalanan
-   warga, bendahara, ketua, kocokan arisan, dan pemeriksaan luberan horizontal
-   di 12 rute.
+1. **Database** — unique indexes & column types make some rules impossible to
+   violate even if application code is wrong.
+2. **Seed** — calls the real services, then checks five invariants: kas balance
+   matches postings, zero konsumsi vs ronda collisions, exactly 21 draw
+   candidates, every locked period has exactly one kas row, every settled bill
+   has exactly one kas row.
+3. **Playwright** (`e2e/smoke.spec.ts`) — 8 tests at a phone viewport: warga,
+   bendahara, and ketua journeys, the arisan draw, and a horizontal overflow
+   check across 12 routes.
 
-## Di luar cakupan
+## Out of scope
 
-| Hal | Kondisi sekarang | Tempat menyambung |
+| Item | Current state | Where to attach |
 |---|---|---|
-| Payment gateway | Tombol konfirmasi manual | `sampah.markPaid()` |
-| Notifikasi push | Stub tanpa efek | `domain/notify.ts` (3 pemicu) |
-| Multi-RT | Tidak ada kolom tenant | Perlu kolom + scoping di tiap service |
-| Unggah berkas | Hanya avatar placeholder | — |
-| Sinkronisasi luring | Tidak ada | Checklist jimpitan paling membutuhkan |
-| Autentikasi | Tanpa kata sandi | `domain/auth.ts` |
+| Payment gateway | Manual confirm button | `sampah.markPaid()` |
+| Push notifications | No-op stub | `domain/notify.ts` (3 triggers) |
+| Multi-RT | No tenant column | Needs a column + scoping in every service |
+| File uploads | Placeholder avatars only | — |
+| Offline sync | None | The jimpitan checklist needs it most |
+| Authentication | No password | `domain/auth.ts` |
 
-## Catatan
+## Notes
 
-- React Router **v8** (template resmi memasang v8; API framework mode sama
-  dengan v7 yang diminta di spesifikasi).
-- Desain visual meniru buku kas RT: kertas hangat, baris bergaris, garis merah
-  margin sebagai kanal status, angka rupiah monospace agar kolom lurus.
-- Panduan onboarding (peran, modul, aturan domain) ada di
-  [`docs/ONBOARDING.md`](docs/ONBOARDING.md) — baca ini sebelum mengubah
+- React Router **v8** (the official template installs v8; the framework-mode API
+  is the same as the v7 requested in the spec).
+- The visual design mimics the RT's paper ledger: warm paper, ruled rows, a red
+  margin rule as the status channel, monospace rupiah figures so columns line up.
+- The onboarding guide (roles, modules, domain rules) is at
+  [`docs/ONBOARDING.md`](docs/ONBOARDING.md) — read it before changing
   `app/domain/`.
-- Rancangan lengkap ada di `docs/superpowers/specs/2026-08-23-rt-app-design.md`.
+- The full design is in `docs/superpowers/specs/2026-08-23-rt-app-design.md`.
