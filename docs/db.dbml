@@ -1,0 +1,263 @@
+enum jenis_kas {
+  masuk
+  keluar
+}
+
+enum kategori_pengumuman {
+  pengumuman
+  berita
+  info
+}
+
+enum role {
+  warga
+  bendahara
+  sekretaris
+  ketua
+}
+
+enum status_arisan {
+  berjalan
+  selesai
+}
+
+enum status_hadir {
+  hadir
+  tidak_hadir
+  diganti
+}
+
+enum status_konsumsi {
+  dijadwalkan
+  terpenuhi
+  dilewati
+}
+
+enum status_periode {
+  terbuka
+  terkunci
+}
+
+enum status_tagihan {
+  belum_bayar
+  lunas
+}
+
+table arisan_cycles {
+  id serial [pk, not null, increment]
+  nama text [not null]
+  iuran_per_periode integer [not null]
+  total_periode integer [not null]
+  mulai date [not null]
+  status status_arisan [not null, default: 'berjalan']
+}
+
+table arisan_members {
+  id serial [pk, not null, increment]
+  cycle_id integer [not null]
+  household_id integer [not null]
+
+  indexes {
+    (cycle_id, household_id) [name: 'arisan_anggota_unik', unique]
+  }
+}
+
+table arisan_payments {
+  id serial [pk, not null, increment]
+  period_id integer [not null]
+  member_id integer [not null]
+  jumlah integer [not null]
+  dibayar_pada date [not null]
+
+  indexes {
+    (period_id, member_id) [name: 'arisan_bayar_unik', unique]
+  }
+}
+
+table arisan_periods {
+  id serial [pk, not null, increment]
+  cycle_id integer [not null]
+  nomor integer [not null]
+  periode date [not null]
+  status status_arisan [not null, default: 'berjalan']
+  pemenang_member_id integer
+  pot integer [not null, default: 0]
+  dikocok_pada timestamp
+
+  indexes {
+    (cycle_id, nomor) [name: 'arisan_periode_nomor_unik', unique]
+    (cycle_id, pemenang_member_id) [name: 'arisan_pemenang_sekali_unik', unique]
+  }
+}
+
+table households {
+  id serial [pk, not null, increment]
+  kode text [not null]
+  nama_kk text [not null]
+  alamat text [not null]
+  regu_id integer
+  urutan_konsumsi integer [not null]
+  aktif boolean [not null, default: true]
+
+  indexes {
+    kode [name: 'households_kode_unik', unique]
+  }
+}
+
+table jimpitan_entries {
+  id serial [pk, not null, increment]
+  household_id integer [not null]
+  tanggal date [not null]
+  jumlah integer [not null]
+  dicatat_oleh integer
+
+  indexes {
+    (household_id, tanggal) [name: 'jimpitan_rumah_tanggal_unik', unique]
+    tanggal [name: 'jimpitan_tanggal_idx']
+  }
+}
+
+table jimpitan_periods {
+  id serial [pk, not null, increment]
+  periode date [not null]
+  status status_periode [not null, default: 'terbuka']
+  total integer [not null, default: 0]
+  kas_transaction_id integer
+  ditutup_pada timestamp
+
+  indexes {
+    periode [name: 'jimpitan_periode_unik', unique]
+  }
+}
+
+table kas_transactions {
+  id serial [pk, not null, increment]
+  tanggal date [not null]
+  jenis jenis_kas [not null]
+  kategori text [not null]
+  jumlah integer [not null]
+  keterangan text [not null]
+  sumber_tipe text
+  sumber_id integer
+  created_by integer
+  dibuat_pada timestamp [not null, default: `now()`]
+
+  indexes {
+    tanggal [name: 'kas_tanggal_idx']
+    (sumber_tipe, sumber_id) [name: 'kas_sumber_unik', unique]
+  }
+}
+
+table konsumsi_turns {
+  id serial [pk, not null, increment]
+  tanggal date [not null]
+  household_id integer [not null]
+  status status_konsumsi [not null, default: 'dijadwalkan']
+
+  indexes {
+    tanggal [name: 'konsumsi_tanggal_unik', unique]
+  }
+}
+
+table pengumuman {
+  id serial [pk, not null, increment]
+  kategori kategori_pengumuman [not null, default: 'pengumuman']
+  judul text [not null]
+  isi text [not null]
+  author_id integer [not null]
+  dibuat_pada timestamp [not null, default: `now()`]
+}
+
+table regu {
+  id serial [pk, not null, increment]
+  nama text [not null]
+  hari integer [not null]
+  pos text [not null]
+}
+
+table ronda_attendance {
+  id serial [pk, not null, increment]
+  ronda_night_id integer [not null]
+  household_id integer [not null]
+  status status_hadir [not null, default: 'hadir']
+  pengganti_household_id integer
+
+  indexes {
+    (ronda_night_id, household_id) [name: 'ronda_hadir_unik', unique]
+  }
+}
+
+table ronda_nights {
+  id serial [pk, not null, increment]
+  tanggal date [not null]
+  regu_id integer [not null]
+  catatan text
+
+  indexes {
+    tanggal [name: 'ronda_tanggal_unik', unique]
+  }
+}
+
+table sampah_bills {
+  id serial [pk, not null, increment]
+  household_id integer [not null]
+  periode date [not null]
+  jumlah integer [not null]
+  jatuh_tempo date [not null]
+  status status_tagihan [not null, default: 'belum_bayar']
+  dibayar_pada date
+  kas_transaction_id integer
+
+  indexes {
+    (household_id, periode) [name: 'sampah_rumah_periode_unik', unique]
+  }
+}
+
+table users {
+  id serial [pk, not null, increment]
+  nama text [not null]
+  email text [not null]
+  household_id integer [not null]
+  role role [not null, default: 'warga']
+  avatar text
+}
+
+ref arisan_members_cycle_id_arisan_cycles_id_fk: arisan_members.cycle_id > arisan_cycles.id [delete: no action, update: no action]
+
+ref arisan_members_household_id_households_id_fk: arisan_members.household_id > households.id [delete: no action, update: no action]
+
+ref arisan_payments_period_id_arisan_periods_id_fk: arisan_payments.period_id > arisan_periods.id [delete: no action, update: no action]
+
+ref arisan_payments_member_id_arisan_members_id_fk: arisan_payments.member_id > arisan_members.id [delete: no action, update: no action]
+
+ref arisan_periods_cycle_id_arisan_cycles_id_fk: arisan_periods.cycle_id > arisan_cycles.id [delete: no action, update: no action]
+
+ref arisan_periods_pemenang_member_id_arisan_members_id_fk: arisan_periods.pemenang_member_id > arisan_members.id [delete: no action, update: no action]
+
+ref households_regu_id_regu_id_fk: households.regu_id > regu.id [delete: no action, update: no action]
+
+ref jimpitan_entries_household_id_households_id_fk: jimpitan_entries.household_id > households.id [delete: no action, update: no action]
+
+ref jimpitan_entries_dicatat_oleh_users_id_fk: jimpitan_entries.dicatat_oleh > users.id [delete: no action, update: no action]
+
+ref jimpitan_periods_kas_transaction_id_kas_transactions_id_fk: jimpitan_periods.kas_transaction_id > kas_transactions.id [delete: no action, update: no action]
+
+ref kas_transactions_created_by_users_id_fk: kas_transactions.created_by > users.id [delete: no action, update: no action]
+
+ref konsumsi_turns_household_id_households_id_fk: konsumsi_turns.household_id > households.id [delete: no action, update: no action]
+
+ref pengumuman_author_id_users_id_fk: pengumuman.author_id > users.id [delete: no action, update: no action]
+
+ref ronda_attendance_ronda_night_id_ronda_nights_id_fk: ronda_attendance.ronda_night_id > ronda_nights.id [delete: no action, update: no action]
+
+ref ronda_attendance_household_id_households_id_fk: ronda_attendance.household_id > households.id [delete: no action, update: no action]
+
+ref ronda_attendance_pengganti_household_id_households_id_fk: ronda_attendance.pengganti_household_id > households.id [delete: no action, update: no action]
+
+ref ronda_nights_regu_id_regu_id_fk: ronda_nights.regu_id > regu.id [delete: no action, update: no action]
+
+ref sampah_bills_household_id_households_id_fk: sampah_bills.household_id > households.id [delete: no action, update: no action]
+
+ref sampah_bills_kas_transaction_id_kas_transactions_id_fk: sampah_bills.kas_transaction_id > kas_transactions.id [delete: no action, update: no action]
+
+ref users_household_id_households_id_fk: users.household_id > households.id [delete: no action, update: no action]
