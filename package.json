@@ -10,6 +10,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx app/db/seed.ts",
     "db:reset": "tsx app/db/seed.ts --reset",
+    "db:dbml": "tsx scripts/gen-dbml.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -31,6 +32,7 @@
     "@types/node": "^22",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "drizzle-dbml-generator": "^0.10.0",
     "drizzle-kit": "^0.31.10",
     "tailwindcss": "^4.2.2",
     "tsx": "^4.23.12",
