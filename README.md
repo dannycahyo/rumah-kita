@@ -114,4 +114,6 @@ Three layers, no unit tests (this is a prototype):
 - The onboarding guide (roles, modules, domain rules) is at
   [`docs/ONBOARDING.md`](docs/ONBOARDING.md) — read it before changing
   `app/domain/`.
+- How the code is layered, request lifecycle, seams, and conventions:
+  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Schema: [`docs/db.dbml`](docs/db.dbml).
 - The full design is in `docs/superpowers/specs/2026-08-23-rt-app-design.md`.
