@@ -33,15 +33,104 @@ These were open questions, resolved with the user:
 
 1. **Jimpitan roster** — fixed roster, all active KK appear on every nightly
    checklist, ordered by `kode`. Not scoped per-pos or per-blok.
+
+   ```mermaid
+   flowchart LR
+     H["households aktif<br/>ORDER BY kode"] --> J{{"LEFT JOIN"}}
+     E["jimpitan_entries<br/>tanggal = malam ini"] --> J
+     J --> R1["A1 · jumlah 1000<br/>tercentang"]
+     J --> R2["A2 · jumlah null<br/>kosong"]
+     J --> R3["... 52 baris, selalu lengkap"]
+   ```
+
 2. **Arisan money stays out of Kas RT.** Arisan is members' money, not RT
    treasury. No arisan flow posts to `kas_transactions`.
+
+   ```mermaid
+   flowchart LR
+     subgraph kas ["Kas RT"]
+       direction TB
+       S["Sampah lunas"] --> K[("kas_transactions")]
+       J["Jimpitan tutup periode"] --> K
+       M["Entri manual bendahara"] --> K
+     end
+     subgraph arisan ["Arisan — uang anggota"]
+       direction TB
+       P["arisan_payments"] --> T["pot"]
+       T --> W["pemenang"]
+     end
+     T -. "tidak pernah posting" .-> K
+     linkStyle 5 stroke:#c0392b,stroke-dasharray:4
+   ```
+
 3. **Jimpitan → Kas** — monthly recap. Bendahara closes the month, producing
    exactly one pemasukan entry; the period then locks against further edits.
+
+   ```mermaid
+   stateDiagram-v2
+     [*] --> terbuka: bulan berjalan
+     terbuka --> terbuka: saveNight (upsert)
+     terbuka --> terkunci: closePeriod → 1× kas.post(masuk)
+     terkunci --> terkunci: closePeriod lagi = no-op
+     note right of terkunci
+       saveNight ditolak,
+       checklist read-only + lock banner
+     end note
+   ```
+
 4. **Ronda regu** — 7 regu (A–G), each fixed to one weekday.
+
+   ```mermaid
+   flowchart LR
+     Sen["Senin"] --> A["Regu A"]
+     Sel["Selasa"] --> B["Regu B"]
+     Rab["Rabu"] --> C["Regu C"]
+     Kam["Kamis"] --> D["Regu D"]
+     Jum["Jumat"] --> E["Regu E"]
+     Sab["Sabtu"] --> F["Regu F"]
+     Min["Minggu"] --> G["Regu G"]
+     A & B & C & D & E & F & G --> N["ronda_nights<br/>ronda.generate()"]
+   ```
+
+   Mapping shown is the seed layout; `regu.hari` is the source of truth.
+
 5. **Konsumsi rotation** — sequential over all KK, auto-skipping any household
    on patrol that night; the skipped household keeps its queue position.
+
+   ```mermaid
+   flowchart TD
+     D["Tanggal berikutnya"] --> H["Kandidat = KK di kepala antrian<br/>urut urutan_konsumsi"]
+     H --> Q{"KK ada di regu<br/>ronda malam itu?"}
+     Q -- "tidak" --> A["Tetapkan konsumsi_turn<br/>geser antrian"]
+     Q -- "ya" --> X["Lewati: KK tetap di kepala antrian"]
+     X --> N["Coba kandidat berikutnya"]
+     N --> Q
+     A --> D
+     R[("ronda_nights")] -. "dibaca saja, satu arah" .-> Q
+   ```
+
 6. **Auth** — login screen with four seeded demo accounts (no password check),
    plus a floating dev-only role switcher.
+
+   ```mermaid
+   sequenceDiagram
+     actor U as User
+     participant L as login.tsx
+     participant S as Session
+     participant R as Route loader
+     U->>L: tap kartu akun demo
+     L->>S: set user (tanpa password)
+     U->>R: request halaman
+     R->>S: requireRole(request, minRole)
+     alt role ≥ minRole
+       S-->>R: user
+       R-->>U: render
+     else
+       S-->>R: tolak
+       R-->>U: redirect / 403
+     end
+     U->>S: role switcher (dev) → POST ganti user
+   ```
 
 ## 3. Architecture
 
